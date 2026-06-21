@@ -324,7 +324,7 @@ export default function ResearchPage() {
     } catch (e) {
       const raw = e instanceof Error ? e.message : String(e);
       const friendly = /requestExecutionPermissions.*not exist|doesn't has corresponding handler|method not found/i.test(raw)
-        ? "Your wallet doesn't expose the 1Shot relay permission method on this network/version. Use “Pay directly (no relayer)” instead — it settles authors on-chain without the relayer."
+        ? "Gasless relay isn't available on this wallet. Use “Pay directly” instead — it settles authors on-chain."
         : /0x35d90805|alreadyattested/i.test(raw)
           ? "This query was already settled on-chain — authors were already paid."
           : raw;
@@ -565,7 +565,7 @@ export default function ResearchPage() {
   async function handleAsk() {
     if (!query.trim()) return;
     if (!isConnected) {
-      setResearch({ status: "error", message: "Connect MetaMask Flask first." });
+      setResearch({ status: "error", message: "Connect a wallet first." });
       return;
     }
     if (prefund) {
@@ -703,7 +703,7 @@ export default function ResearchPage() {
 
       {/* 1. Connect */}
       <Card>
-        <StepHead n={1} title="Connect wallet (MetaMask Flask)">
+        <StepHead n={1} title="Connect wallet">
           {isConnected ? (
             <span className="flex items-center gap-2 text-[11px] text-emerald-600">
               <span className="flex items-center gap-1.5">
@@ -824,7 +824,7 @@ export default function ResearchPage() {
                   }`}
                 >
                   <span className="font-medium">{!prefund ? "● " : "○ "}Non-custodial <span className="text-[var(--muted)]">(default)</span></span>
-                  <span className="mt-0.5 block text-[10px] text-[var(--muted)]">Grant a 7715 ceiling — funds stay in your wallet until the split. Settle later (direct or 1Shot) or auto-pay.</span>
+                  <span className="mt-0.5 block text-[10px] text-[var(--muted)]">Set a spending ceiling — funds stay in your wallet until the split. Settle later (direct or Gateway) or auto-pay.</span>
                 </button>
                 <button
                   onClick={() => setPrefund(true)}
@@ -1112,7 +1112,7 @@ export default function ResearchPage() {
                     className="rounded border border-[var(--rule)] bg-transparent px-1 py-0.5 text-[10px]"
                   >
                     <option value="direct">direct (no fee)</option>
-                    <option value="1shot">1Shot (gasless relay)</option>
+                    <option value="1shot">Gateway (batched)</option>
                   </select>
                 </span>
               ) : null}
@@ -1479,8 +1479,8 @@ export default function ResearchPage() {
                                 onChange={(e) => setRelayChain(Number(e.target.value))}
                                 className="rounded-md border border-[var(--rule)] bg-transparent px-1.5 py-1.5 text-[11px]"
                               >
-                                <option value={sepolia.id}>on Sepolia</option>
-                                <option value={baseSepolia.id}>on Base Sepolia (cheaper fee)</option>
+                                <option value={sepolia.id}>direct on Arc</option>
+                                
                               </select>
                               <button
                                 onClick={handleSettle}
@@ -1491,7 +1491,7 @@ export default function ResearchPage() {
                               </button>
                             </div>
                             <p className="text-[10px] leading-relaxed text-[var(--muted)]">
-                              <b>1Shot</b> = gasless (relayer pays gas in USDC) but adds a relayer fee — high on Ethereum
+                              <b>Gateway</b> = batched, gas-free on Arc
                               Sepolia testnet, tiny on Base Sepolia. <b>Record-only</b> writes the attestation without paying.
                               {redeem.status === "error" ? <span className="block text-red-600">⚠ {redeem.message}</span> : null}
                               {settle.status === "error" ? <span className="block text-red-600">⚠ {settle.message}</span> : null}
@@ -1636,7 +1636,7 @@ export default function ResearchPage() {
 
               {redeem.status === "done" ? (
                 <details className="mt-3">
-                  <summary className="cursor-pointer text-[11px] text-emerald-600">✓ Relayed via 1Shot — view raw response</summary>
+                  <summary className="cursor-pointer text-[11px] text-emerald-600">✓ Relayed — view raw response</summary>
                   <pre className="mt-2 max-h-56 overflow-auto rounded-md bg-indigo-50 p-3 text-[11px] dark:bg-indigo-950/40">
                     {JSON.stringify(redeem.result, null, 2)}
                   </pre>
