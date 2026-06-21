@@ -46,6 +46,19 @@ No server secrets present in the client bundle — verified absent: Circle API k
 operator/agent private key, personal Arc RPC token, Circle entity secret, dev-pay token. The only
 exposed RPC is the public no-token Arc endpoint.
 
+## Load / concurrency
+| Test | Result |
+|---|---|
+| 6 parallel `POST /api/research` (Venice + corpus + agent mesh) | **6/6 → 200, `venice: live`**, ~27s wall | no rate-limit failures or crashes |
+| 10 parallel reverse-x402 cites (`GET /api/summaries`) | all served, ~3s wall |
+| Note | concurrent *settlements* share one operator nonce (serialize) — expected, documented |
+
+## Cross-browser / responsive
+- `<meta name="viewport" content="width=device-width, initial-scale=1">` present.
+- Landing page is responsive (16 `sm:`/`lg:` breakpoints; stacks on mobile).
+- Dashboard sidebar is fixed `w-60` (no mobile collapse) → cramped on small phones. The product is
+  **desktop-optimized** (the primary review surface); mobile is functional but tight.
+
 ## Known limitations (documented, non-blocking)
 - Research page retains some legacy client-side payment logic behind Kuot-labelled UI (full rewrite
   deferred to avoid destabilizing the working flow).
