@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server";
 import { createGatewayMiddleware } from "@circle-fin/x402-batching/server";
 import { getShared } from "@/lib/store";
-import { ARC_CFG } from "@/lib/gateway";
 import { proveGrounding } from "@/lib/grounding";
 import { recursiveSplit } from "@/lib/recursive";
 import type { ResearchResult } from "@/lib/agent";
 
 export const runtime = "nodejs";
 
-// Circle Gateway facilitator — verifies + settles the batched payment on Arc.
+const PRICE_DOLLARS = "$0.0001"; // a sub-cent nanopayment to cite Kuot
+const PRICE_USDC_6 = "100"; // same, in atomic USDC (6 decimals)
+
+// Circle Gateway facilitator middleware — builds the 402, verifies + settles the
+// batched payment on Arc (settlement runs server-side on Vercel's clean network).
 let _gw: ReturnType<typeof createGatewayMiddleware> | null = null;
-function facilitator() {
+function gateway() {
   const sellerAddress =
     (process.env.KUOT_COLLECTOR as string) ??
     (process.env.NEXT_PUBLIC_SESSION_ACCOUNT as string) ??
@@ -22,67 +25,84 @@ function facilitator() {
   }));
 }
 
-/** The single source of truth for the 402 payment requirements (one accepts entry). */
-function buildRequirements(queryId: string, payTo: string) {
+type PaywallResult = { paid: boolean; statusCode: number; headers: Record<string, string>; body: string };
+
+/**
+ * Run the Gateway `require()` middleware against a Node-style req/res shim. The
+ * middleware constructs the correct payment requirements from `req.url`, and on a
+ * valid payment verifies + settles the batch, then calls next(). We capture that.
+ */
+async function runGatewayPaywall(queryId: string, paymentHeader?: string): Promise<PaywallResult> {
+  const mw = gateway().require(PRICE_DOLLARS);
+  const req = {
+    method: "GET",
+    url: `/api/summaries/${encodeURIComponent(queryId)}`,
+    headers: paymentHeader ? { "payment-signature": paymentHeader } : {},
+  } as unknown as Parameters<typeof mw>[0];
+
+  let statusCode = 200;
+  const headers: Record<string, string> = {};
+  let body = "";
+  const res = {
+    get statusCode() {
+      return statusCode;
+    },
+    set statusCode(c: number) {
+      statusCode = c;
+    },
+    setHeader: (k: string, v: string) => {
+      headers[k.toUpperCase()] = v;
+    },
+    end: (b?: string) => {
+      if (b != null) body = String(b);
+    },
+    status: (c: number) => {
+      statusCode = c;
+      return res;
+    },
+    json: (o: unknown) => {
+      headers["CONTENT-TYPE"] = "application/json";
+      body = JSON.stringify(o);
+    },
+  } as unknown as Parameters<typeof mw>[1];
+
+  let nexted = false;
+  await mw(req, res, () => {
+    nexted = true;
+  });
+  return { paid: nexted, statusCode, headers, body };
+}
+
+function recursivePlan(result: ResearchResult) {
+  const proof = proveGrounding({ query: result.query, synthesis: result.synthesis, payouts: result.payouts ?? [] });
+  const split = recursiveSplit(BigInt(PRICE_USDC_6), proof.grounded);
   return {
-    scheme: "exact",
-    network: "eip155:5042002",
-    amount: PRICE_USDC_6, // Circle batching client reads `amount`
-    maxAmountRequired: PRICE_USDC_6, // legacy x402 field (humans/curl)
-    resource: `/api/summaries/${queryId}`,
-    description: `Cite Kuot's synthesis for ${queryId} (recursive citation toll)`,
-    asset: ARC_CFG.usdc,
-    payTo,
-    maxTimeoutSeconds: 120,
-    extra: { name: "GatewayWalletBatched", version: "1", verifyingContract: ARC_CFG.gatewayWallet },
+    digest: proof.digest,
+    recursive: {
+      recursiveBps: split.recursiveBps,
+      toAuthorsTotalUSDC: Number(split.toAuthorsTotalAtomic) / 1e6,
+      marginUSDC: Number(split.marginAtomic) / 1e6,
+      authors: split.toAuthors.map((a) => ({
+        identity: a.identity,
+        author: a.author,
+        amountUSDC: Number(a.amountAtomic) / 1e6,
+        weightBps: a.weightBps,
+      })),
+    },
   };
 }
 
 /**
- * Verify + settle a REAL Gateway batched payment. The client sends the signed
- * authorization (base64 JSON) in the `Payment-Signature` header; the facilitator
- * needs both that payload and the original requirements. Returns the on-chain
- * settlement tx, or null for a demo header / failed verification.
- */
-async function settleGatewayPayment(header: string, requirements: unknown): Promise<{ transaction?: string; payer?: string; error?: string } | null> {
-  let paymentPayload: unknown;
-  try {
-    paymentPayload = JSON.parse(Buffer.from(header, "base64").toString("utf8"));
-  } catch {
-    return null; // not a real payment payload (e.g. the "demo" header)
-  }
-  try {
-    const gw = facilitator();
-    // The Gateway verify API wants the requirement fields (resource, asset, payTo,
-    // amount, network…) inside the paymentPayload too — merge them in.
-    const merged = { ...(requirements as Record<string, unknown>), ...(paymentPayload as Record<string, unknown>) };
-    const v = await gw.verify({ paymentPayload: merged, paymentRequirements: requirements });
-    if (!v.valid) return { error: `verify: ${v.error ?? "invalid"}` };
-    const s = await gw.settle({ paymentPayload: merged, paymentRequirements: requirements });
-    return s.success ? { transaction: s.transaction, payer: v.payer } : { error: `settle: ${s.error ?? "failed"}` };
-  } catch (e) {
-    return { error: `exception: ${e instanceof Error ? e.message : String(e)}` };
-  }
-}
-
-/**
  * GET /api/summaries/[queryId] — reverse-x402: Kuot's own answers are a paid
- * resource. Another agent pays a nanopayment (Circle Gateway batched, on Arc) to
- * read a stored synthesis; a fraction of that payment then flows RECURSIVELY back
- * to the original authors whose work grounded the answer. Being cited earns money,
- * and the citation graph compounds (RFB-03 "payment-chain depth").
+ * resource. Another agent pays a Gateway-batched nanopayment on Arc to cite a
+ * stored synthesis; a fraction flows RECURSIVELY back to the original authors.
  *
- * No Payment-Signature → 402 advertising the Gateway-batched option.
- * Paid                 → 200 with the synthesis + the recursive payout plan.
+ * No payment       → 402 (Gateway-batched challenge, built by the facilitator).
+ * Real payment     → verify + settle the batch on Arc, then 200 + recursive plan.
+ * `demo` header    → click-through preview (no on-chain settle).
  */
-const PRICE_USDC_6 = "100"; // $0.0001 — a sub-cent nanopayment to cite Kuot
-
 export async function GET(req: Request, ctx: { params: Promise<{ queryId: string }> }) {
   const { queryId } = await ctx.params;
-  const payTo =
-    (process.env.KUOT_COLLECTOR as `0x${string}`) ??
-    (process.env.NEXT_PUBLIC_SESSION_ACCOUNT as `0x${string}`) ??
-    "0x000000000000000000000000000000000000dEaD";
 
   const stored = await getShared<{ result: ResearchResult }>(queryId);
   const result = stored?.result;
@@ -90,46 +110,33 @@ export async function GET(req: Request, ctx: { params: Promise<{ queryId: string
     return NextResponse.json({ error: "no stored synthesis for this id (publish via /api/share first)" }, { status: 404 });
   }
 
-  // Gateway batching is detected by extra.name === "GatewayWalletBatched" + version "1"
-  // (see @circle-fin/x402-batching supportsBatching). A GatewayClient pays this natively.
-  const paid = req.headers.get("Payment-Signature") ?? req.headers.get("X-PAYMENT");
-  if (!paid) {
-    const challenge = { x402Version: 1, accepts: [buildRequirements(queryId, payTo)] };
-    // The Circle GatewayClient reads the requirements from the PAYMENT-REQUIRED
-    // header (base64 JSON); the body is the same, for humans/curl.
-    return NextResponse.json(challenge, {
-      status: 402,
-      headers: { "PAYMENT-REQUIRED": Buffer.from(JSON.stringify(challenge), "utf8").toString("base64") },
+  const paymentHeader = req.headers.get("Payment-Signature") ?? req.headers.get("X-PAYMENT") ?? undefined;
+
+  // Demo click-through: preview the unlocked content + recursive plan without paying.
+  if (paymentHeader === "demo") {
+    const plan = recursivePlan(result);
+    return NextResponse.json(
+      { queryId, synthesis: result.synthesis, ...plan, settlement: { note: "demo preview — a real GatewayClient payment settles the batch on Arc" } },
+      { status: 200 },
+    );
+  }
+
+  // Real flow: the facilitator builds the 402 (unpaid) or verifies + settles (paid).
+  const pw = await runGatewayPaywall(queryId, paymentHeader);
+  if (!pw.paid) {
+    // Unpaid (or invalid payment) → return the facilitator's response verbatim
+    // (correct PAYMENT-REQUIRED format the GatewayClient understands).
+    return new NextResponse(pw.body || JSON.stringify({ error: "payment required" }), {
+      status: pw.statusCode || 402,
+      headers: pw.headers,
     });
   }
 
-  // Paid: compute the recursive split back to the original grounded authors.
-  // (Server-side settlement verification is delegated to the Gateway facilitator;
-  //  here we return the plan + unlocked synthesis the paying agent receives.)
-  // Real Gateway payment → verify + settle the batch on Arc (returns the tx).
-  const settlement = await settleGatewayPayment(paid, buildRequirements(queryId, payTo));
-
-  const proof = proveGrounding({ query: result.query, synthesis: result.synthesis, payouts: result.payouts ?? [] });
-  const split = recursiveSplit(BigInt(PRICE_USDC_6), proof.grounded);
-
+  // Paid + settled on Arc. Surface the settlement + the recursive split to authors.
+  const plan = recursivePlan(result);
+  const settlementTx = pw.headers["X-PAYMENT-RESPONSE"] ?? pw.headers["PAYMENT-RESPONSE"] ?? null;
   return NextResponse.json(
-    {
-      queryId,
-      synthesis: result.synthesis,
-      digest: proof.digest,
-      settlement: settlement ?? { note: "demo header (no on-chain settle); a real GatewayClient payment settles the batch" },
-      recursive: {
-        recursiveBps: split.recursiveBps,
-        toAuthorsTotalUSDC: Number(split.toAuthorsTotalAtomic) / 1e6,
-        marginUSDC: Number(split.marginAtomic) / 1e6,
-        authors: split.toAuthors.map((a) => ({
-          identity: a.identity,
-          author: a.author,
-          amountUSDC: Number(a.amountAtomic) / 1e6,
-          weightBps: a.weightBps,
-        })),
-      },
-    },
-    { status: 200, headers: { "X-PAYMENT-RESPONSE": "verified" } },
+    { queryId, synthesis: result.synthesis, ...plan, settlement: { settled: true, response: settlementTx } },
+    { status: 200, headers: { "X-PAYMENT-RESPONSE": String(settlementTx ?? "settled") } },
   );
 }

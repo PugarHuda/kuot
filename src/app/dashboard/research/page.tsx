@@ -311,7 +311,7 @@ export default function ResearchPage() {
       }
       const wc = await resolveWalletClient(relayChainObj);
       if (!wc) {
-        setRedeem({ status: "error", message: "Wallet not ready — reconnect MetaMask Flask." });
+        setRedeem({ status: "error", message: "Wallet not ready — reconnect your wallet." });
         return;
       }
       const result = await redeemViaOneShot({
@@ -348,7 +348,7 @@ export default function ResearchPage() {
     }
     const wc = await resolveWalletClient();
     if (!wc || !wc.account) {
-      setPayDirect({ status: "error", message: "Wallet not ready — reconnect MetaMask Flask." });
+      setPayDirect({ status: "error", message: "Wallet not ready — reconnect your wallet." });
       return;
     }
     try {
@@ -505,7 +505,7 @@ export default function ResearchPage() {
     setGrant({ status: "granting" });
     const wc = await resolveWalletClient();
     if (!wc) {
-      setGrant({ status: "error", message: "Wallet not ready — reconnect MetaMask Flask and try again." });
+      setGrant({ status: "error", message: "Wallet not ready — reconnect your wallet and try again." });
       return false;
     }
     const params: BudgetParams = {
@@ -572,7 +572,7 @@ export default function ResearchPage() {
       if (prefundState.status !== "locked" && prefundState.status !== "done") {
         const wc = await resolveWalletClient();
         if (!wc || !wc.account) {
-          setPrefundState({ status: "error", message: "Wallet not ready — reconnect MetaMask Flask." });
+          setPrefundState({ status: "error", message: "Wallet not ready — reconnect your wallet." });
           return;
         }
         const amount6 = BigInt(Math.round(perDay * 1e6));
@@ -646,7 +646,7 @@ export default function ResearchPage() {
     setRevoke({ status: "revoking" });
     const wc = await resolveWalletClient();
     if (!wc) {
-      setRevoke({ status: "error", message: "Wallet not ready — reconnect MetaMask Flask." });
+      setRevoke({ status: "error", message: "Wallet not ready — reconnect your wallet." });
       return;
     }
     try {
