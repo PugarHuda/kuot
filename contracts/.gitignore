@@ -1,0 +1,7 @@
+# Foundry
+out/
+cache/
+broadcast/
+.env
+
+# Keep lib/ as git submodules (tracked via .gitmodules)
