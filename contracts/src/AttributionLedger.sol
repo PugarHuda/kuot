@@ -6,11 +6,11 @@ interface IERC20 {
     function transfer(address to, uint256 amount) external returns (bool);
 }
 
-/// @title AttributionLedger — Sebutkan
+/// @title AttributionLedger — kuot
 /// @notice The settlement contract: when the research agent finishes a query, it
 ///         calls `attestAndSplit` to pay the cited authors their share of the
 ///         spend, atomically, and emit an on-chain attestation of the citation.
-///         This is the transaction Sebutkan relays gasless on mainnet via 1Shot.
+///         This is the transaction kuot relays gasless on mainnet via 1Shot.
 /// @dev    The caller (the agent's session account, acting under an ERC-7710
 ///         delegation) must have approved this contract to move `amount` of USDC.
 contract AttributionLedger {

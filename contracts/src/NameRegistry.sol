@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.24;
 
-/// @title NameRegistry — Sebutkan
+/// @title NameRegistry — kuot
 /// @notice On-chain binding from an author identity hash (keccak of the
 ///         OpenAlex/ORCID id) to a real wallet. An author proves wallet control
 ///         off-chain with an EIP-191 signature over keccak256(authorId, wallet);

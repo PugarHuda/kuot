@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.24;
 
-/// @title ShareRegistry — Sebutkan
+/// @title ShareRegistry — kuot
 /// @notice Durable, zero-infra store for publicly shared research results. The
 ///         operator publishes a finished result's JSON on-chain under a short id
 ///         derived from the same queryId that AttributionLedger attests — so the

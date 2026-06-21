@@ -10,7 +10,7 @@ interface INameRegistryY {
     function walletOf(bytes32 authorHash) external view returns (address);
 }
 
-/// @title CitationYield — Sebutkan
+/// @title CitationYield — kuot
 /// @notice A transparent, protocol-funded "citation-loyalty" yield on rewards that
 ///         sit unclaimed: the longer an author waits before claiming, the more
 ///         bonus accrues (linear APR), paid from this contract's reserve. This is

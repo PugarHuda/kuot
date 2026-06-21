@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.24;
 
-/// @title AgentRegistry8004 — Sebutkan
+/// @title AgentRegistry8004 — kuot
 /// @notice Minimal on-chain identity registry for the agent mesh, aligned with
 ///         the ERC-8004 Trustless Agents draft. Each agent publishes a card
 ///         (name, capabilities, trust method + proof) and accrues reputation as

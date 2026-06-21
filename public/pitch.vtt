@@ -1,0 +1,40 @@
+WEBVTT
+
+NOTE kuot — pitch deck narration (timings match the generated audio).
+
+00:00:00.000 --> 00:00:09.460
+kuot — the research agent that cites and pays its sources. Built for the MetaMask Smart Accounts Kit, 1Shot, and Venice AI Dev Cook-Off.
+
+00:00:09.910 --> 00:00:24.450
+Here's the problem. AI scrapes humanity's research and pays the authors nothing. Every model is built on papers and writing by real people who are never cited, credited, or paid.
+
+00:00:24.900 --> 00:00:41.440
+Our solution: an agent that cites and pays. You grant one scoped budget. kuot buys the papers it needs, reads them with Venice, and splits USDC back to every author it cites.
+
+00:00:41.890 --> 00:00:59.550
+It starts with one signature. A single ERC-7715 Advanced Permission via the MetaMask Smart Accounts Kit: up to ten USDC for a twenty-four hour grant. A hard cap that auto-expires. You keep full custody.
+
+00:01:00.000 --> 00:01:22.320
+Under the hood it's a mesh, not a script. The Researcher redelegates strictly narrower budgets using ERC-7710. A Planner splits the question, a Reader fan-out answers in parallel, a Citation-Matcher weights who gets paid, and a Fact-checker can reject and force a revision.
+
+00:01:22.770 --> 00:01:35.730
+The agents' brain is Venice — private and uncensored. Five Venice endpoints in the main flow: chat, web search, embeddings, image, and text-to-speech. The embeddings weight who gets paid.
+
+00:01:36.180 --> 00:01:54.950
+Then authors get paid — gasless, on mainnet. The agent pays for papers via x402. Payouts relay through 1Shot on Base mainnet with an EIP-7702 upgrade, gas paid in USDC. The contract blocks double payment.
+
+00:01:55.400 --> 00:02:15.080
+And it's flexible. Non-custodial by default — funds stay in your wallet until the split. Pay directly in one transaction with no relayer fee, relay gaslessly via 1Shot, escrow for an ORCID claim, or auto-pay on finish. A Kutip-style lock-upfront mode is an opt-in.
+
+00:02:15.530 --> 00:02:27.220
+And it's all real. No mocks in the critical path. Six contracts live, a hundred and twelve tests green, five on-chain agents, and a real 1Shot relay executed on Base mainnet.
+
+00:02:27.670 --> 00:02:39.360
+One product covers every track: Best Agent, Best A2A coordination, Best x402 and ERC-7710, Best use of Venice AI, and Best 1Shot Relayer.
+
+00:02:39.810 --> 00:02:55.790
+And you can see it all yourself. The live app has an interactive guided tour that narrates and points at every feature, navigating section to section on its own — and each research run explains itself, step by step. It's cozy, anime-styled, and fully on-chain.
+
+00:02:56.240 --> 00:03:03.460
+kuot — an agent that pays the people it learns from. Try it live at kuot.vercel.app. Thank you.
+

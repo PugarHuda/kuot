@@ -1,0 +1,59 @@
+1
+00:00:00,000 --> 00:00:14,000
+This is kuot — live. An autonomous AI research agent that cites and pays the human authors it cites. Let me walk every feature.
+
+2
+00:00:14,000 --> 00:00:26,000
+The landing sets the scene, and these stats are read live from Sepolia — real attestations, real USDC attributed, real authors cited. Nothing is hard-coded.
+
+3
+00:00:26,000 --> 00:00:44,000
+On the dashboard I hit "Take the guided tour" — an interactive, narrated tour that points at and explains every section, navigating on its own. Here's that walk, with me narrating.
+
+4
+00:00:44,000 --> 00:01:04,000
+First I connect MetaMask Flask on Sepolia, then grant one ERC-7715 Advanced Permission — a scoped USDC budget the agent can never exceed. Nothing leaves my wallet; it's a cap, with a live countdown until it expires.
+
+5
+00:01:04,000 --> 00:01:18,000
+The agent mesh redelegates strictly narrower slices of that budget over ERC-7710 — authority only ever shrinks. That's real agent-to-agent coordination.
+
+6
+00:01:18,000 --> 00:01:42,000
+I ask a question. The agent searches OpenAlex's 250-million-paper index, then five agents — a Planner, parallel Readers, a Citation-Matcher, a Fact-checker, and a Summarizer — reason with Venice. Watch the redelegation hops and the fact-check pass.
+
+7
+00:01:42,000 --> 00:02:00,000
+The Citation-Matcher uses Venice embeddings to rank relevance, so every cited author gets a fair, relevance-weighted USDC share. The citations are clickable.
+
+8
+00:02:00,000 --> 00:02:24,000
+Now I settle. One click: attestAndSplit records the attestation and pays each author in a single on-chain transaction — no relayer fee, no double-pay. Here's the transaction on Etherscan. Payouts can also relay gaslessly via 1Shot on Base mainnet.
+
+9
+00:02:24,000 --> 00:02:40,000
+Each run produces an on-brand citation receipt, plus Venice extras — a generated image and a spoken audio briefing in the answer's language — and the agents earn on-chain reputation.
+
+10
+00:02:40,000 --> 00:02:56,000
+Every finished run is saved in the Library, fully searchable with a confidence filter — the synthesis, the agent trace, the journals, and the payout plan, re-openable without re-paying.
+
+11
+00:02:56,000 --> 00:03:10,000
+The Agents page shows the five specialists, each with its budget fraction, its Venice model, and a live reputation score it earns on-chain in the ERC-8004 registry.
+
+12
+00:03:10,000 --> 00:03:24,000
+Anyone can sponsor a topic on the Bounties page. When kuot satisfies it, the deposited USDC is paid to the cited authors — no platform fee — and unsettled bounties are refundable.
+
+13
+00:03:24,000 --> 00:03:42,000
+Authors get paid on the Claim page: they prove their ORCID, bind their wallet with one signature, and withdraw — plus a twelve-percent citation-loyalty yield that ticks up live while it waits.
+
+14
+00:03:42,000 --> 00:03:58,000
+And it's all public. Activity is a live read of every attestation on-chain, with a leaderboard of the most-cited authors.
+
+15
+00:03:58,000 --> 00:04:10,000
+That's the whole loop. kuot — an agent that cites and pays its sources. Every citation, a real payment. Try it at kuot.vercel.app.

@@ -9,11 +9,11 @@ interface INameRegistry {
     function walletOf(bytes32 authorHash) external view returns (address);
 }
 
-/// @title UnclaimedEscrow — Sebutkan
+/// @title UnclaimedEscrow — kuot
 /// @notice Holds USDC owed to authors who haven't claimed their wallet yet,
 ///         keyed by their identity hash (ORCID/OpenAlex id, same hash as
 ///         NameRegistry). When an author proves their ORCID and binds a wallet
-///         in NameRegistry, they can withdraw everything Sebutkan accrued for
+///         in NameRegistry, they can withdraw everything kuot accrued for
 ///         them. Nothing is lost — unclaimed rewards wait on-chain.
 contract UnclaimedEscrow {
     IERC20U public immutable usdc;

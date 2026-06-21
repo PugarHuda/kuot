@@ -6,9 +6,9 @@ interface IERC20B {
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
 }
 
-/// @title BountyMarket — Sebutkan
+/// @title BountyMarket — kuot
 /// @notice Anyone can sponsor research on a topic by depositing USDC. When a
-///         Sebutkan query satisfies the topic, the operator settles the bounty,
+///         kuot query satisfies the topic, the operator settles the bounty,
 ///         paying the cited authors proportionally. Unsettled bounties are
 ///         refundable after expiry. Turns "I want research on X" into a funded,
 ///         author-paying request — no platform fee.
