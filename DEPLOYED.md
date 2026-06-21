@@ -32,16 +32,15 @@ Deployer/operator/agent: `0x31481ADc889B5e00b70846F59967DAF09CBe4a3e`
 - `MockUSYC.simulateYield` 0.5 USDC → `currentValue` = **1.500000**, `pendingYield` = **0.500000**
 - → an unclaimed author redeems principal + real on-chain yield (not subsidised)
 
-**Circle Gateway nanopayments** — funded + wired (settlement = last integration detail)
+**Circle Gateway nanopayments** — FULLY SETTLING end-to-end ✅
 - Agent's Gateway balance funded with a **real on-chain deposit** (1 USDC): approve `0xdb70b578…`,
   deposit `0x2e8364a4…`.
-- The reverse-x402 endpoint serves a correct **GatewayWalletBatched** 402; a real `GatewayClient`
-  reads it, signs the EIP-3009 authorization, and pays — the client→server flow completes.
-- Server verify/settle is wired to Circle's testnet facilitator (`createGatewayMiddleware`). Full
-  batched settlement still needs Circle's exact verify payload schema (it builds it from the
-  Express `require()` middleware; adapting that to a Next route handler is the remaining step).
-  Honest status: Gateway is funded + wired + the payment flow runs; the on-chain batch settle is
-  the last mile.
+- A real `GatewayClient` pays the reverse-x402 `/api/summaries/[id]` endpoint for **$0.0001**; the
+  route runs Circle's `createGatewayMiddleware().require()` which **verifies + settles the batch on
+  Arc**. Proven: buyer Gateway balance dropped **0.9999 → 0.9998 USDC**, response
+  `{"success":true,"transaction":"0c53ea2c-…","network":"eip155:5042002"}`.
+- Reproduce: `GET /api/dev/gateway-pay?id=14c966d503a1d1b2` (server-side buyer, returns the
+  before/after Gateway balance + settlement). Seller (KUOT_COLLECTOR) must differ from the buyer.
 
 **Directional reputation bond** — `ReputationBond`
 - `postBond(provider, ctx, 1.0 USDC)` → `trustVector(operator→provider@ctx)` = **1.000000**
