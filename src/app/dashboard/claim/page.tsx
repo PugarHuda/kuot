@@ -140,11 +140,11 @@ export default function ClaimPage() {
                   onClick={() => connect({ connector: flask })}
                   className="rounded-md bg-[var(--accent)] px-4 py-2 text-xs font-medium text-white"
                 >
-                  Connect {flask.name}
+                  Connect wallet
                 </button>
               ) : (
                 <a
-                  href="https://docs.metamask.io/snaps/get-started/install-flask/"
+                  href="https://metamask.io/download/"
                   target="_blank"
                   rel="noreferrer"
                   className="rounded-md border border-[var(--rule)] px-4 py-2 text-xs font-medium hover:border-[var(--accent)] hover:text-[var(--accent)]"
