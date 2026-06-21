@@ -149,7 +149,7 @@ export default function ClaimPage() {
                   rel="noreferrer"
                   className="rounded-md border border-[var(--rule)] px-4 py-2 text-xs font-medium hover:border-[var(--accent)] hover:text-[var(--accent)]"
                 >
-                  Install MetaMask Flask →
+                  Install your wallet →
                 </a>
               );
             })()}

@@ -31,7 +31,7 @@ export default function Overview() {
       <p className="text-[11px] uppercase tracking-[0.15em] text-[var(--accent)]">Dashboard</p>
       <h1 className="serif mt-1 text-3xl font-semibold tracking-tight">Overview</h1>
       <p className="mt-2 max-w-xl text-sm text-[var(--ink)]/70">
-        An autonomous research agent operating under your scoped permission — citing, paying, and
+        An autonomous research agent operating under your spending budget — citing, paying, and
         attesting on-chain.
       </p>
 

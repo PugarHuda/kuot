@@ -20,12 +20,29 @@ export async function GET() {
 
   try {
     const latest = await client.getBlockNumber();
-    const fromBlock = latest > 9_000n ? latest - 9_000n : 0n; // free-tier getLogs range cap (10k)
+    // Arc produces blocks fast and getLogs is capped to a 10k range, so paginate
+    // from the ledger deploy era up to latest in 9k chunks (capped) to catch all
+    // attestations even when they're far behind the head.
+    const STEP = 9_000n;
+    const MAX_CHUNKS = 30; // ~270k blocks of lookback, ~60 RPC calls max
+    const start = BigInt(process.env.KUOT_LEDGER_FROM_BLOCK ?? "47802000");
+    let from = latest > STEP * BigInt(MAX_CHUNKS) ? latest - STEP * BigInt(MAX_CHUNKS) : 0n;
+    if (from < start) from = start;
 
-    const [attested, paid] = await Promise.all([
-      client.getLogs({ address: LEDGER, event: QUERY_ATTESTED, fromBlock, toBlock: latest }),
-      client.getLogs({ address: LEDGER, event: AUTHOR_PAID, fromBlock, toBlock: latest }),
-    ]);
+    const ranges: { lo: bigint; hi: bigint }[] = [];
+    for (let lo = from; lo <= latest; lo += STEP + 1n) {
+      ranges.push({ lo, hi: lo + STEP > latest ? latest : lo + STEP });
+    }
+    const chunks = await Promise.all(
+      ranges.map(({ lo, hi }) =>
+        Promise.all([
+          client.getLogs({ address: LEDGER, event: QUERY_ATTESTED, fromBlock: lo, toBlock: hi }),
+          client.getLogs({ address: LEDGER, event: AUTHOR_PAID, fromBlock: lo, toBlock: hi }),
+        ]),
+      ),
+    );
+    const attested = chunks.flatMap((c) => c[0]);
+    const paid = chunks.flatMap((c) => c[1]);
 
     // Per-query author counts.
     const authorsByQuery = new Map<string, number>();

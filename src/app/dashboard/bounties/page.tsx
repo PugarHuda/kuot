@@ -23,7 +23,7 @@ export default function BountiesPage() {
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
   // A wallet that granted the agent budget is upgraded to a 7702 smart account
-  // (code prefixed 0xef0100). MetaMask routes such accounts differently and
+  // (code prefixed 0xef0100). your wallet routes such accounts differently and
   // rejects plain contract calls (approve/create) — warn before they try.
   const [delegated, setDelegated] = useState(false);
   useEffect(() => {
@@ -87,9 +87,9 @@ export default function BountiesPage() {
         setStatus("⚠️ Your wallet still has a pending transaction. Wait a few seconds for it to confirm, then try again.");
       } else if (/unauthorized|json-rpc protocol is not supported|method not (found|supported)/i.test(msg)) {
         setStatus(
-          "⚠️ Your wallet rejected the payment. This usually means its Sepolia RPC is misconfigured or rate-limited, " +
-            "or the account is a delegated smart account (it granted the agent budget) that MetaMask routes differently. " +
-            "Fix: in MetaMask → Networks → Sepolia, set RPC to https://ethereum-sepolia-rpc.publicnode.com, or sponsor from a fresh wallet that hasn't granted a budget.",
+          "⚠️ Your wallet rejected the payment. This usually means its Arc RPC is misconfigured or rate-limited, " +
+            "or the account is a delegated smart account (it granted the agent budget) that your wallet routes differently. " +
+            "Fix: in your wallet → Networks → Arc, set RPC to https://ethereum-sepolia-rpc.publicnode.com, or sponsor from a fresh wallet that hasn't granted a budget.",
         );
       } else if (/user rejected|denied/i.test(msg)) {
         setStatus("You declined the request in your wallet.");
@@ -142,12 +142,12 @@ export default function BountiesPage() {
           </button>
         </div>
         {!isConnected ? (
-          <p className="mt-2 text-[11px] text-[var(--muted)]">Connect MetaMask (sidebar) to sponsor.</p>
+          <p className="mt-2 text-[11px] text-[var(--muted)]">Connect a wallet (sidebar) to sponsor.</p>
         ) : null}
         {isConnected && delegated ? (
           <p className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-            ⚠️ This wallet is a <b>delegated smart account</b> (it granted the agent budget), so MetaMask
-            may reject a direct bounty payment. To sponsor, switch to a MetaMask account that hasn&apos;t
+            ⚠️ This wallet is a <b>delegated smart account</b> (it granted the agent budget), so your wallet
+            may reject a direct bounty payment. To sponsor, switch to a your wallet account that hasn&apos;t
             granted a budget, then come back here.
           </p>
         ) : null}

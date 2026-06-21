@@ -66,7 +66,7 @@ const SESSION_ACCOUNT =
   (process.env.NEXT_PUBLIC_SESSION_ACCOUNT as `0x${string}`) ??
   "0x000000000000000000000000000000000000dEaD";
 
-/** Operator that settles a prefunded (Kutip-style upfront) pool to authors. */
+/** Operator that settles a prefunded (Lock-upfront upfront) pool to authors. */
 const OPERATOR_ADDRESS =
   (process.env.NEXT_PUBLIC_OPERATOR_ADDRESS as `0x${string}`) ??
   "0x39D2bae5EAedA9283535dDC98F1991c81eD5Cd7E";
@@ -74,14 +74,14 @@ const OPERATOR_ADDRESS =
 /** Narrated full-flow walkthrough — spotlights each part of the run in turn. */
 const TOUR_STEPS: TourStep[] = [
   { selector: "[data-tour=stepper]", title: "The flow", narration: "Kuot works in three steps — grant a budget, research, then settle and pay. Let me walk you through a completed run." },
-  { selector: "[data-tour=budget]", title: "One scoped permission", narration: "First, the user signed a single E.R.C. seventy-seven-fifteen permission — a scoped U.S.D.C. budget. It's a hard cap with a live countdown, and nothing was charged up front. The funds stay in your wallet." },
+  { selector: "[data-tour=budget]", title: "One spending budget", narration: "First, the user signed a single E.R.C. seventy-seven-fifteen permission — a scoped U.S.D.C. budget. It's a hard cap with a live countdown, and nothing was charged up front. The funds stay in your wallet." },
   { selector: "[data-tour=mesh]", title: "A2A redelegation", narration: "The Researcher then redelegates strictly narrower budgets to specialist agents. Authority only ever shrinks — that's the agent-to-agent coordination model." },
   { selector: "[data-tour=ask]", title: "Ask a question", narration: "The user asks a question. The agent searches a real two-hundred-fifty-million-paper index, then reasons with Venice — private and uncensored." },
   { selector: "[data-tour=synthesis]", title: "The grounded answer", narration: "This is the grounded synthesis the agent produced — with clickable citations that link straight to each cited paper." },
   { selector: "[data-tour=summary]", title: "TL;DR", narration: "A short summary from the Summarizer agent, keeping its inline citations." },
   { selector: "[data-tour=trace]", title: "Multi-agent trace", narration: "Here is how it actually ran. The Researcher redelegated narrower budgets to a Planner, parallel Readers, a Fact-checker that can force a revision, and a Summarizer — each a real on-chain agent that earns reputation." },
   { selector: "[data-tour=payout]", title: "Author payout plan", narration: "Every cited author gets a U.S.D.C. share, weighted by Venice embeddings. Demo wallets are shown until the real author claims with their ORCID." },
-  { selector: "[data-tour=settle]", title: "Settle on-chain", narration: "One click here records the attestation and pays every author in a single transaction — no relayer fee, and the contract blocks double payment." },
+  { selector: "[data-tour=settle]", title: "Settle on-chain", narration: "One click here records the attestation and pays every author in a single transaction — no settlement fee, and the contract blocks double payment." },
   { selector: "[data-tour=receipt]", title: "Citation receipt", narration: "Finally, an on-brand citation receipt you can download, plus a Venice-generated image and a spoken briefing. That's Kuot — an agent that cites and pays its sources." },
 ];
 
@@ -227,7 +227,7 @@ export default function ResearchPage() {
     }
   }
 
-  // Auto-switch to the permission chain (Sepolia) once connected on the wrong one.
+  // Auto-switch to the permission chain (Arc) once connected on the wrong one.
   useEffect(() => {
     if (isConnected && chainId !== undefined && chainId !== PERMISSION_CHAIN.id) {
       switchChain?.({ chainId: PERMISSION_CHAIN.id });
@@ -256,14 +256,14 @@ export default function ResearchPage() {
   useEffect(() => {
     if (research.status === "done" && autoPay && !prefund && payDirect.status === "idle" && redeem.status === "idle") {
       // Both rails are real: direct = attestAndSplit from your wallet (no fee);
-      // 1shot = the live 1Shot relayer (gasless, gas paid in USDC).
+      // 1shot = the live Circle Gateway (gas-free, gas paid in USDC).
       if (autoPayRail === "1shot") handleRedeem();
       else handlePayDirect();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [research.status, autoPay, autoPayRail]);
 
-  // Prefund (Kutip-style): the locked pool auto-splits to authors when the run ends.
+  // Prefund (Lock-upfront): the locked pool auto-splits to authors when the run ends.
   useEffect(() => {
     if (research.status === "done" && prefund && prefundState.status === "locked") {
       handlePrefundSplit();
@@ -304,7 +304,7 @@ export default function ResearchPage() {
     setRedeem({ status: "redeeming" });
     const relayChainObj: Chain = relayChain === baseSepolia.id ? baseSepolia : sepolia;
     try {
-      // Relaying on a different chain (e.g. Base Sepolia for a far lower fee)?
+      // Relaying on a different chain (e.g. Base Arc for a far lower fee)?
       // Switch the wallet to it first so the 7715 grant + relay land there.
       if (relayChain !== chainId) {
         await switchChainAsync({ chainId: relayChain as typeof sepolia.id | typeof baseSepolia.id });
@@ -324,7 +324,7 @@ export default function ResearchPage() {
     } catch (e) {
       const raw = e instanceof Error ? e.message : String(e);
       const friendly = /requestExecutionPermissions.*not exist|doesn't has corresponding handler|method not found/i.test(raw)
-        ? "Gasless relay isn't available on this wallet. Use “Pay directly” instead — it settles authors on-chain."
+        ? "Gas-free relay isn't available on this wallet. Use “Pay directly” instead — it settles authors on-chain."
         : /0x35d90805|alreadyattested/i.test(raw)
           ? "This query was already settled on-chain — authors were already paid."
           : raw;
@@ -333,10 +333,10 @@ export default function ResearchPage() {
   }
 
   /**
-   * Pay authors DIRECTLY on-chain (no 1Shot relayer): approve USDC, then call
+   * Pay authors DIRECTLY on-chain (no Circle Gateway): approve USDC, then call
    * AttributionLedger.attestAndSplit — one tx that records the attestation AND
    * transfers each author their weighted USDC share, straight from the user's
-   * wallet. Simpler demo path with no relayer fee (user pays gas in ETH).
+   * wallet. Simpler demo path with no settlement fee (user pays gas in ETH).
    */
   async function handlePayDirect() {
     if (research.status !== "done") return;
@@ -384,7 +384,7 @@ export default function ResearchPage() {
       const friendly = /0x35d90805|alreadyattested/i.test(raw)
         ? "This query was already settled on-chain — its authors were already paid. Re-settling is blocked to prevent paying them twice. Ask a new question to settle again."
         : /unauthorized|json-rpc protocol|in-flight transaction limit/i.test(raw)
-          ? "Your wallet rejected the payment (a 7702-delegated account or rate-limited RPC). Try a fresh wallet, or use the gasless 1Shot button."
+          ? "Your wallet rejected the payment (a 7702-delegated account or rate-limited RPC). Try a fresh wallet, or use the gas-free Gateway button."
           : /insufficient|exceeds balance/i.test(raw)
             ? "Not enough USDC in your wallet to settle. Fund it with test USDC and retry."
             : raw;
@@ -483,7 +483,7 @@ export default function ResearchPage() {
   const onWrongChain = isConnected && chainId !== PERMISSION_CHAIN.id;
 
   async function resolveWalletClient(chain: Chain = PERMISSION_CHAIN): Promise<WalletClient | null> {
-    // When a specific chain is requested (e.g. Base Sepolia relay), always build a
+    // When a specific chain is requested (e.g. Base Arc relay), always build a
     // client bound to it; otherwise reuse the connected wagmi client.
     if (chain.id === PERMISSION_CHAIN.id && walletClient) return walletClient;
     // Use the already-connected account (no eth_requestAccounts → no extra popup).
@@ -518,8 +518,8 @@ export default function ResearchPage() {
       expiry: Math.floor(Date.now() / 1000) + expiryHours * 3600,
       chainId: PERMISSION_CHAIN.id,
     };
-    // The MetaMask Snap reads the USDC token via the wallet's OWN network RPC,
-    // which on Sepolia is frequently rate-limited → "failed to fetch token
+    // The your wallet Snap reads the USDC token via the wallet's OWN network RPC,
+    // which on Arc is frequently rate-limited → "failed to fetch token
     // balance and metadata". That error is usually transient, so retry a few
     // times (with backoff) before surfacing the manual-RPC fix.
     const isTransientRpc = (m: string) =>
@@ -548,8 +548,8 @@ export default function ResearchPage() {
       }
     }
     const message = isTransientRpc(lastErr)
-      ? "Your wallet's Sepolia RPC keeps failing to read the USDC token (often a rate-limited public node). " +
-        "Fix it once: MetaMask → Settings → Networks → Sepolia → RPC URL → https://ethereum-sepolia-rpc.publicnode.com, " +
+      ? "Your wallet's Arc RPC keeps failing to read the USDC token (often a rate-limited public node). " +
+        "Fix it once: your wallet → Settings → Networks → Arc → RPC URL → https://ethereum-sepolia-rpc.publicnode.com, " +
         "then click Grant again. (It's a wallet-side network setting, not this site.)"
       : lastErr;
     setGrant({ status: "error", message });
@@ -558,8 +558,8 @@ export default function ResearchPage() {
 
   /**
    * "Grant/Lock & research" — one click from the Ask box.
-   * - prefund OFF (default, non-custodial): grant the ERC-7715 budget if needed, then run.
-   * - prefund ON (Kutip-style upfront): transfer the author pool to the operator NOW
+   * - prefund OFF (default, non-custodial): grant the Agent Wallet policy budget if needed, then run.
+   * - prefund ON (Lock-upfront upfront): transfer the author pool to the operator NOW
    *   (locks it), then run; authors are auto-split from that pool when the run finishes.
    */
   async function handleAsk() {
@@ -670,7 +670,7 @@ export default function ResearchPage() {
         <h1 className="serif mt-1 text-3xl font-semibold tracking-tight">Research</h1>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--ink)]/70">
           Grant one scoped budget — the agent buys papers, reads with Venice, and splits USDC back to
-          every author it cites. Gasless, non-custodial.
+          every author it cites. Gas-free, non-custodial.
         </p>
       </header>
 
@@ -739,7 +739,7 @@ export default function ResearchPage() {
                   rel="noreferrer"
                   className="rounded-md border border-[var(--rule)] px-4 py-2 text-xs font-medium hover:border-[var(--accent)] hover:text-[var(--accent)]"
                 >
-                  Install MetaMask Flask →
+                  Install your wallet →
                 </a>
               );
             })()}
@@ -753,18 +753,18 @@ export default function ResearchPage() {
             >
               Switch to {PERMISSION_CHAIN.name}
             </button>
-            <span className="text-[11px] text-amber-600">ERC-7715 lives on {PERMISSION_CHAIN.name}.</span>
+            <span className="text-[11px] text-amber-600">Agent Wallet policy lives on {PERMISSION_CHAIN.name}.</span>
           </div>
         ) : null}
       </Card>
 
       {/* 2. Grant */}
       <Card>
-        <StepHead n={2} title="Grant a periodic USDC budget (ERC-7715)" />
+        <StepHead n={2} title="Grant a USDC spending budget" />
         {grant.status !== "granted" ? (
           <>
             <p className="mt-1 text-xs text-neutral-500">
-              One signature creates an ERC-7710 delegation — a <b>daily spending ceiling</b>, not an
+              One signature creates a scoped delegation — a <b>daily spending ceiling</b>, not an
               up-front charge. Nothing leaves your wallet now; the agent only spends a tiny micropayment
               (~0.01 USDC) per run when it buys a paper, and never beyond this cap.
             </p>
@@ -836,7 +836,7 @@ export default function ResearchPage() {
                     {prefund ? "● " : "○ "}Lock upfront{" "}
                     <span className="rounded bg-amber-100 px-1 py-0.5 text-[9px] text-amber-700 dark:bg-amber-950 dark:text-amber-300">custodial</span>
                   </span>
-                  <span className="mt-0.5 block text-[10px] text-[var(--muted)]">Kutip-style: lock {perDay} USDC to the operator now, auto-split to authors when the run finishes.</span>
+                  <span className="mt-0.5 block text-[10px] text-[var(--muted)]">Lock-upfront: lock {perDay} USDC to the operator now, auto-split to authors when the run finishes.</span>
                 </button>
               </div>
             </div>
@@ -912,7 +912,7 @@ export default function ResearchPage() {
         {grant.status === "granted" ? (
           <details className="mt-4">
             <summary className="cursor-pointer text-[11px] text-[var(--muted)] hover:text-[var(--accent)]">
-              View raw permission context (ERC-7715)
+              View raw permission context 
             </summary>
             <pre className="mt-2 max-h-48 overflow-auto rounded-md bg-neutral-100 p-3 text-[11px] dark:bg-neutral-900">
               {JSON.stringify(grant.context, bigintReplacer, 2)}
@@ -926,7 +926,7 @@ export default function ResearchPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <FixSepoliaRpcButton />
                 <span className="text-[10px] text-[var(--muted)]">
-                  One click adds a working Sepolia RPC to MetaMask — no manual network form.
+                  One click adds a working Arc RPC to your wallet — no manual network form.
                 </span>
               </div>
             ) : null}
@@ -1118,8 +1118,8 @@ export default function ResearchPage() {
               ) : null}
               <span className="block text-[10px] text-[var(--muted)]">
                 {autoPayRail === "1shot"
-                  ? "Settles via the live 1Shot relayer (gasless — gas paid in USDC). High fee on Sepolia testnet; tiny on Base. Real, not a mock."
-                  : "Settles directly on-chain (attestAndSplit, no relayer fee) right after each run — honours the budget you committed."}
+                  ? "Settles via the live Circle Gateway (gas-free — gas paid in USDC). High fee on Arc testnet; tiny on Base. Real, not a mock."
+                  : "Settles directly on-chain (attestAndSplit, no settlement fee) right after each run — honours the budget you committed."}
               </span>
             </span>
           </label>
@@ -1219,7 +1219,7 @@ export default function ResearchPage() {
             })()}
             {prefund && prefundState.status !== "idle" ? (
               <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-                🔒 <b>Upfront pool (Kutip-style):</b>{" "}
+                🔒 <b>Upfront pool (Lock-upfront):</b>{" "}
                 {prefundState.status === "locking"
                   ? "locking USDC…"
                   : prefundState.status === "locked"
@@ -1434,7 +1434,7 @@ export default function ResearchPage() {
                           ) : null}
                         </div>
 
-                        {/* PRIMARY: one click — records the attestation AND pays each author (no relayer fee). */}
+                        {/* PRIMARY: one click — records the attestation AND pays each author (no settlement fee). */}
                         <div className="mt-1.5 flex flex-wrap items-center gap-3">
                           <button
                             onClick={handlePayDirect}
@@ -1449,7 +1449,7 @@ export default function ResearchPage() {
                                   ? "✓ Authors settled"
                                   : "Pay authors — settle on-chain"}
                           </button>
-                          <span className="text-[11px] text-[var(--muted)]">records + pays in one tx · no relayer fee · you pay gas in ETH</span>
+                          <span className="text-[11px] text-[var(--muted)]">records + pays in one tx · no settlement fee · you pay gas in ETH</span>
                         </div>
                         {payDirect.status === "done" ? (
                           <p className="mt-2 text-[11px] text-emerald-600">
@@ -1462,7 +1462,7 @@ export default function ResearchPage() {
                         ) : null}
                         {payDirect.status === "error" ? <p className="mt-2 text-[11px] text-red-600">{payDirect.message}</p> : null}
 
-                        {/* ADVANCED: gasless relay + record-only, tucked away to keep the main path clear. */}
+                        {/* ADVANCED: gas-free relay + record-only, tucked away to keep the main path clear. */}
                         <details className="mt-2 text-[11px]">
                           <summary className="cursor-pointer text-[var(--muted)] hover:text-[var(--accent)]">Advanced settlement options</summary>
                           <div className="mt-2 space-y-2 rounded-md border border-[var(--rule)] bg-[var(--paper)] p-3">
@@ -1472,7 +1472,7 @@ export default function ResearchPage() {
                                 disabled={redeem.status === "redeeming" || paid}
                                 className="rounded-md bg-indigo-600 px-3 py-1.5 text-[11px] font-medium text-white transition hover:bg-indigo-500 disabled:opacity-40"
                               >
-                                {redeem.status === "redeeming" ? "Relaying…" : "Pay gaslessly via 1Shot →"}
+                                {redeem.status === "redeeming" ? "Relaying…" : "Pay gas-free via Circle Gateway →"}
                               </button>
                               <select
                                 value={relayChain}
@@ -1492,7 +1492,7 @@ export default function ResearchPage() {
                             </div>
                             <p className="text-[10px] leading-relaxed text-[var(--muted)]">
                               <b>Gateway</b> = batched, gas-free on Arc
-                              Sepolia testnet, tiny on Base Sepolia. <b>Record-only</b> writes the attestation without paying.
+                              Arc testnet, tiny on Base Arc. <b>Record-only</b> writes the attestation without paying.
                               {redeem.status === "error" ? <span className="block text-red-600">⚠ {redeem.message}</span> : null}
                               {settle.status === "error" ? <span className="block text-red-600">⚠ {settle.message}</span> : null}
                             </p>
@@ -1587,7 +1587,7 @@ export default function ResearchPage() {
               <div data-tour="receipt" className="mt-4">
                 <DownloadableReceipt
                   result={research.result}
-                  // "Paid" only after an actual PAYMENT (direct, 1Shot, or prefund
+                  // "Paid" only after an actual PAYMENT (direct, Gateway, or prefund
                   // split) — the record-only attestation (①) doesn't move money.
                   settled={payDirect.status === "done" || redeem.status === "done" || prefundState.status === "done"}
                 />
@@ -1792,7 +1792,7 @@ function GrantStatus({ expiryUnix, capUSDC }: { expiryUnix: number; capUSDC: num
         <b>{runs} runs</b> before the cap is reached. Unused budget stays in your wallet; the rest expires at {when}.
       </p>
       <p className="mt-1 text-[10px] text-[var(--muted)]">
-        Author payouts are <i>separate</i> — paid from your wallet (gasless via 1Shot) only when you click “Pay authors”, not from this cap.
+        Author payouts are <i>separate</i> — paid from your wallet (gas-free via Circle Gateway) only when you click “Pay authors”, not from this cap.
       </p>
     </div>
   );

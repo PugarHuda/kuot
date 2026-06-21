@@ -30,11 +30,17 @@ export async function GET(req: Request) {
 
   try {
     const latest = await client.getBlockNumber();
-    const fromBlock = latest > 9_000n ? latest - 9_000n : 0n;
-    const [earned, logs] = await Promise.all([
+    const STEP = 9_000n;
+    const start = BigInt(process.env.KUOT_LEDGER_FROM_BLOCK ?? "47802000");
+    let from = latest > STEP * 30n ? latest - STEP * 30n : 0n;
+    if (from < start) from = start;
+    const ranges: { lo: bigint; hi: bigint }[] = [];
+    for (let lo = from; lo <= latest; lo += STEP + 1n) ranges.push({ lo, hi: lo + STEP > latest ? latest : lo + STEP });
+    const [earned, logChunks] = await Promise.all([
       client.readContract({ address: LEDGER, abi: EARNINGS_ABI, functionName: "authorEarnings", args: [address] }),
-      client.getLogs({ address: LEDGER, event: AUTHOR_PAID, args: { author: address }, fromBlock, toBlock: latest }),
+      Promise.all(ranges.map(({ lo, hi }) => client.getLogs({ address: LEDGER, event: AUTHOR_PAID, args: { author: address }, fromBlock: lo, toBlock: hi }))),
     ]);
+    const logs = logChunks.flat();
 
     const payments = logs
       .map((l) => ({

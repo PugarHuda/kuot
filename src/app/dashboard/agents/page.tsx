@@ -28,7 +28,7 @@ export default function AgentsPage() {
       <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--ink)]/70">
         Kuot is a mesh of specialized agents. The Researcher holds your granted permission and
         <span className="serif italic"> redelegates</span> strictly narrower budgets to each
-        specialist — authority only ever shrinks (ERC-7710). Each is a real on-chain principal in the{" "}
+        specialist — authority only ever shrinks . Each is a real on-chain principal in the{" "}
         <a href="https://eips.ethereum.org/EIPS/eip-8004" target="_blank" rel="noreferrer" className="link-accent">
           ERC-8004
         </a>{" "}

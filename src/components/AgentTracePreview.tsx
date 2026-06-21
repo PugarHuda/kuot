@@ -67,7 +67,7 @@ export function AgentTracePreview() {
             </div>
           </div>
           <p className="mt-3 text-[11px] text-[var(--muted)]">
-            Authority only ever narrows — each agent redelegates a smaller slice (ERC-7710).
+            Authority only ever narrows — each agent redelegates a smaller slice .
           </p>
           <Link
             href="/dashboard/research"
@@ -101,7 +101,7 @@ export function AgentTracePreview() {
             <div className="pt-0.5 text-[10px] text-[var(--muted)]">+ 4 more · weighted by Venice embeddings</div>
           </div>
           <div className="mt-3 border-t border-[var(--rule)] pt-2 text-[10px] text-[var(--muted)]">
-            attestAndSplit · paid on-chain · no relayer fee
+            attestAndSplit · paid on-chain · no settlement fee
           </div>
         </div>
       </div>

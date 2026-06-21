@@ -37,10 +37,10 @@ export default function ActivityPage() {
       <p className="text-[11px] uppercase tracking-[0.15em] text-[var(--accent)]">On-chain</p>
       <h1 className="serif mt-2 text-4xl font-semibold tracking-tight">Attestation activity</h1>
       <p className="mt-3 max-w-xl text-sm leading-relaxed text-[var(--ink)]/75">
-        Every research query records a public attestation on AttributionLedger (Sepolia) of each
+        Every research query records a public attestation on AttributionLedger (Arc) of each
         author&apos;s owed share. This is a live read of those{" "}
         <span className="serif italic">QueryAttested</span> events. Payment is settled to authors
-        gaslessly via 1Shot (or atomically via <span className="serif italic">attestAndSplit</span>).
+        gas-free via Circle Gateway (or atomically via <span className="serif italic">attestAndSplit</span>).
       </p>
 
       {/* Stat tiles */}
