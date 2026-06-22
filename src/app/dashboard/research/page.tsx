@@ -564,8 +564,11 @@ export default function ResearchPage() {
    */
   async function handleAsk() {
     if (!query.trim()) return;
+    // Kuot research runs server-side (the agent pays via its own Circle Agent Wallet),
+    // so anyone can run a query immediately — no wallet connect or budget grant needed.
+    // The optional lock-upfront / grant paths below only apply when a wallet is connected.
     if (!isConnected) {
-      setResearch({ status: "error", message: "Connect a wallet first." });
+      await handleResearch();
       return;
     }
     if (prefund) {
@@ -601,10 +604,8 @@ export default function ResearchPage() {
           return;
         }
       }
-    } else if (grant.status !== "granted") {
-      const ok = await handleGrant();
-      if (!ok) return; // grant failed/declined — error already shown
     }
+    // No budget-grant gate: the agent settles server-side, so research always runs.
     await handleResearch();
   }
 
@@ -1014,9 +1015,7 @@ export default function ResearchPage() {
                     ? prefundState.status === "locked" || prefundState.status === "done"
                       ? "❝ Research"
                       : `🔒 Lock ${perDay} USDC & research`
-                    : grant.status === "granted"
-                      ? "❝ Research"
-                      : `Grant ${perDay} USDC & research`}
+                    : "❝ Research"}
           </button>
         </div>
 
