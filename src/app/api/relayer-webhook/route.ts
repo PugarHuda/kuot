@@ -4,7 +4,7 @@ import { verifyRelayerWebhook, recordStatus, getStoredStatus } from "@/lib/webho
 export const runtime = "nodejs";
 
 /**
- * POST /api/relayer-webhook — the 1Shot relayer's destinationUrl.
+ * POST /api/relayer-webhook — the Circle Gateway's destinationUrl.
  * Verifies the Ed25519 signature against the relayer JWKS, then records the
  * status so the UI can read it (webhook as source of truth, not polling).
  *

@@ -1,11 +1,11 @@
 /**
- * 1Shot Permissionless Relayer client — Kuot
+ * Gateway Permissionless Relayer client — Kuot
  *
  * Gas abstraction for EIP-7710 smart accounts over plain JSON-RPC (no signup,
  * no API key for the public relayer). Used to relay Kuot's attestAndSplit /
  * author-payout transactions on MAINNET while paying gas in stablecoins
- * (USDC/USDT/USDG/MUSD), with EIP-7702 authorizations upgrading the EOA to a
- * smart account. Qualifying path for the "Best Use of 1Shot Relayer" track.
+ * (USDC/USDT/USDG/MUSD), with  authorizations upgrading the EOA to a
+ * smart account. Qualifying path for the "Best Use of Gateway Relayer" track.
  *
  * Endpoint + method shapes verified from
  * https://1shotapi.com/docs/quickstarts/gas-sponsorship-eip7710 (2026-06-11):
@@ -40,9 +40,9 @@ async function rpc<T>(method: string, params: unknown, url: string): Promise<T> 
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: ++_id, method, params }),
   });
-  if (!res.ok) throw new Error(`1Shot ${method} HTTP ${res.status}: ${await res.text()}`);
+  if (!res.ok) throw new Error(`Gateway ${method} HTTP ${res.status}: ${await res.text()}`);
   const json = (await res.json()) as { result?: T; error?: { code: number; message: string } };
-  if (json.error) throw new Error(`1Shot ${method} RPC ${json.error.code}: ${json.error.message}`);
+  if (json.error) throw new Error(`Gateway ${method} RPC ${json.error.code}: ${json.error.message}`);
   return json.result as T;
 }
 
@@ -66,7 +66,7 @@ export type ChainCapabilities = {
   /** Fee payment recipient — include a stablecoin transfer here in the bundle. */
   feeCollector: `0x${string}`;
   /** The delegation `to` (delegate) address. Delegations MUST target this or
-   *  redemption fails. The session account redelegates to it for the 1Shot path. */
+   *  redemption fails. The session account redelegates to it for the Gateway path. */
   targetAddress: `0x${string}`;
   tokens: { address: `0x${string}`; symbol: string; decimals: string }[];
 };
@@ -139,7 +139,7 @@ export type AuthorizationListEntry = {
  * are merged into one on-chain redeemDelegations batch.
  *
  * GOTCHAS (verified):
- *  - Browser wallets (ERC-7715) handle the EIP-7702 upgrade automatically → omit
+ *  - Browser wallets (ERC-7715) handle the  upgrade automatically → omit
  *    `authorizationList`. Local/script signers include ONE entry, first-use only.
  *  - Fresh delegation salt per delegation; bigint/bytes → hex.
  *  - Self-sponsored: one delegation scoping feeAmount + workAmount, two

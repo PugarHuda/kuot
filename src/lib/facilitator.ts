@@ -2,10 +2,10 @@
  * x402 7710 facilitator — Kuot
  *
  * A facilitator is the service an x402 resource server calls to (1) VERIFY a
- * payment payload and (2) SETTLE it on-chain. The 1Shot track explicitly suggests
- * "build your own x402 7710 facilitator on top of the 1Shot public relayer" — this
- * is exactly that: we verify the ERC-7710 "exact" payment, then settle it gaslessly
- * by relaying the delegation redemption through the 1Shot permissionless relayer.
+ * payment payload and (2) SETTLE it on-chain. The Gateway track explicitly suggests
+ * "build your own x402 7710 facilitator on top of the Gateway public relayer" — this
+ * is exactly that: we verify the ERC-7710 "exact" payment, then settle it gas-free
+ * by relaying the delegation redemption through Circle Gateway.
  *
  * Endpoints: /api/facilitator/{supported,verify,settle}. The verify logic here is
  * pure so it can be unit-tested without a network.
@@ -57,7 +57,7 @@ export function verifyPayment(payload: PaymentPayload, reqs: PaymentRequirements
   return { isValid: true, payer: p.delegationManager };
 }
 
-/** Map an x402 network string to a chainId for the 1Shot relayer. */
+/** Map an x402 network string to a chainId for the Circle Gateway. */
 export function networkToChainId(network: string): number | undefined {
   const m: Record<string, number> = {
     arc: 5042002,

@@ -1,10 +1,10 @@
 /**
- * 1Shot relayer webhook verification (Ed25519) — Kuot
+ * Circle Gateway webhook verification (Ed25519) — Kuot
  *
  * The relayer POSTs signed status events to our destinationUrl on every state
  * change. We verify each one against the relayer's JWKS (Ed25519, OKP) before
  * trusting the status — using webhooks as the source of truth scores higher on
- * the 1Shot track than polling.
+ * the Gateway track than polling.
  */
 import * as ed from "@noble/ed25519";
 import crypto from "node:crypto";

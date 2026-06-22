@@ -3,7 +3,7 @@
  *
  * Turns a research result's payout plan into the on-chain `attestAndSplit` call,
  * and packages it as an Execution that a session account redeems under its
- * ERC-7710 delegation — gasless on mainnet via the 1Shot relayer.
+ * ERC-7710 delegation — gas-free on Arc via the Circle Gateway.
  */
 import { createPublicClient, createWalletClient, encodeFunctionData, erc20Abi, http, keccak256, toHex, type Address } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -68,7 +68,7 @@ export function encodeAttestAndSplit(args: {
   });
 }
 
-/** Package the settlement as a single Execution7710 for the 1Shot relayer / redeem. */
+/** Package the settlement as a single Execution7710 for the Circle Gateway / redeem. */
 export function buildSettlementExecution(args: {
   ledger: `0x${string}`;
   query: string;
@@ -86,7 +86,7 @@ export function buildSettlementExecution(args: {
  * Operator-relayed on-chain attestation. Records the citation on AttributionLedger
  * (record-only `attest`, no funds moved) so there is a real, auditable on-chain
  * receipt of who was cited and their share. The payout itself is the separate
- * gasless 1Shot transfer path. Returns the tx hash.
+ * gasless Gateway transfer path. Returns the tx hash.
  */
 export async function operatorAttest(args: {
   ledger: `0x${string}`;

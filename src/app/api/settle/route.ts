@@ -31,8 +31,8 @@ export const maxDuration = 60;
  *
  * Sends a REAL on-chain attestation to AttributionLedger.attest (operator-relayed),
  * recording who was cited and their share — an auditable on-chain receipt. The
- * USDC payout itself runs gasless via 1Shot (client "Pay authors gasless" button).
- * Also surfaces the live 1Shot relayer scope for the chain.
+ * USDC payout itself runs gasless via Gateway (client "Pay authors gasless" button).
+ * Also surfaces the live Circle Gateway scope for the chain.
  */
 type Body = {
   query: string;

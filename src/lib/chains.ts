@@ -3,7 +3,7 @@
  *
  * Primary chain is now ARC TESTNET (Circle's stablecoin-native L1): native USDC
  * gas, sub-second finality, gasless Gateway batching. The legacy Sepolia/Base
- * config is retained so the old MetaMask/1Shot path keeps compiling during the
+ * config is retained so the old MetaMask/Gateway path keeps compiling during the
  * port — Arc is the rail we build on for Lepton.
  *
  *  - Arc testnet (5042002) → x402 + Gateway nanopayments settle in USDC; gas in USDC.
@@ -45,9 +45,9 @@ void sepolia;
 export const PAYMENT_CHAIN = arcTestnet;
 
 /**
- * Cheap L2 mainnet for the ONE real 1Shot relay the "Best 1Shot Relayer" track
- * requires (relay 7710 + EIP-7702 on a *mainnet* relayer). Base gas is cents, so
- * the qualifying relay costs ~$0.01–0.10 in USDC. Verified live: 1Shot `.com`
+ * Cheap L2 mainnet for the ONE real Gateway settlement the "Best Gateway Relayer" track
+ * requires (relay 7710 +  on a *mainnet* relayer). Base gas is cents, so
+ * the qualifying relay costs ~$0.01–0.10 in USDC. Verified live: Gateway `.com`
  * serves Base (8453), Optimism (10), and Arbitrum (42161). See scripts/relay-mainnet-1shot.mjs.
  */
 export const ONESHOT_MAINNET_CHAIN = base;

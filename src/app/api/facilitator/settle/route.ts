@@ -11,8 +11,8 @@ export const maxDuration = 60;
  * POST /api/facilitator/settle
  * { paymentPayload, paymentRequirements } → { success, taskId?, network, payer? }
  *
- * The x402 facilitator settle step, built on the 1Shot permissionless relayer:
- * verify the ERC-7710 payment, then redeem the delegation gaslessly via 1Shot
+ * The x402 facilitator settle step, built on Circle Gateway:
+ * verify the ERC-7710 payment, then redeem the delegation gas-free via Gateway
  * (gas paid in stablecoin). Returns the relayer TaskId for status tracking.
  */
 export async function POST(req: Request) {
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
 
   try {
     // Decode the x402 permissionContext (encoded delegation chain) into the shape
-    // the 1Shot relayer expects, then relay the redemption of the execution.
+    // the Circle Gateway expects, then relay the redemption of the execution.
     const delegations = decodeDelegations(payload.payload.permissionContext).map((d) => toRelayerJson(d));
     const execution: Execution7710 = {
       target: payload.payload.execution.to,
