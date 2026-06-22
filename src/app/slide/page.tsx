@@ -30,7 +30,7 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
         <img src="/logo.svg" alt="" width={64} height={64} className="mx-auto" />
         <h1 className="serif mt-6 text-6xl font-semibold tracking-tight sm:text-7xl">Kuot</h1>
         <p className="mx-auto mt-5 max-w-xl text-balance text-xl leading-relaxed text-[var(--ink)]/85">
-          The research agent that cites <span className="serif italic text-[var(--accent)]">and pays</span> its sources.
+          The recursive citation economy <span className="serif italic text-[var(--accent)]">on Arc</span>.
         </p>
         <p className="mt-8 text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
           Lepton Agents Hackathon · Canteen × Circle × Arc
@@ -63,7 +63,7 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
           An agent that cites <span className="text-[var(--accent)]">and pays</span>.
         </h2>
         <p className="mt-6 text-lg leading-relaxed text-[var(--ink)]/75">
-          You grant <b>one</b> scoped budget. Kuot buys the papers it needs, reads them with Venice,
+          The agent runs under a strict spending cap. Kuot buys the papers it needs, reads them with Venice,
           and splits USDC back to <b>every author it cites</b> — gas-free, non-custodial, and recorded
           on-chain. Every citation becomes a payment.
         </p>
@@ -79,8 +79,8 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
           Sign once. The agent can never overspend.
         </h2>
         <p className="mt-5 text-lg leading-relaxed text-[var(--ink)]/75">
-          A single <b>a Circle Agent Wallet spending policy</b> via the Circle Agent Stack:
-          <span className="text-[var(--accent)]"> &ldquo;up to 10 USDC for this 24-hour grant.&rdquo;</span>{" "}
+          A single <b>Circle Agent Wallet spending policy</b> (Circle Agent Stack):
+          <span className="text-[var(--accent)]"> &ldquo;up to 10 USDC per day — a cap it can never exceed.&rdquo;</span>{" "}
           The cap and the window are one number — the agent draws ~0.01 USDC per paper and never exceeds it.
         </p>
         <div className="mt-6 flex flex-wrap gap-2 text-sm">
@@ -100,7 +100,7 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
         <Kicker>A2A coordination</Kicker>
         <h2 className="serif mt-4 text-4xl font-semibold leading-tight">A mesh, not a script.</h2>
         <p className="mt-4 text-base text-[var(--ink)]/75">
-          The Researcher <b>redelegates</b> strictly narrower budgets (Gateway settlement). Authority only ever shrinks.
+          The Researcher redelegates strictly narrower budgets to each specialist. Authority only ever shrinks.
         </p>
         <ol className="mt-5 space-y-1.5 text-sm">
           {[
@@ -125,7 +125,7 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
     id: "venice",
     render: (
       <div className="max-w-2xl">
-        <Kicker>Best use of Venice AI</Kicker>
+        <Kicker>Venice AI · the brain</Kicker>
         <h2 className="serif mt-4 text-4xl font-semibold leading-tight">The agents&apos; brain — private &amp; uncensored.</h2>
         <p className="mt-5 text-lg leading-relaxed text-[var(--ink)]/75">
           Five Venice endpoints, in the main flow:
@@ -151,7 +151,7 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
         <h2 className="serif mt-4 text-4xl font-semibold leading-tight">Authors get paid — gas-free, on mainnet.</h2>
         <ul className="mt-5 space-y-3 text-base text-[var(--ink)]/80">
           <li>💸 <b>x402</b> — the agent pays a real USDC micropayment to unlock papers, verified on-chain.</li>
-          <li>⛽ <b>Circle Gateway</b> — payouts relayed gas-free on <b>Arc</b> . Gas paid in USDC.</li>
+          <li>⛽ <b>Circle Gateway</b> — payouts settled gas-free, batched on <b>Arc</b> . Gas paid in USDC.</li>
           <li>📜 <b>On-chain attestation</b> — <i>attestAndSplit</i> records who&apos;s owed <b>and</b> pays them in one tx. The contract blocks re-attesting, so each author is paid <b>once</b>.</li>
           <li>🪪 <b>ORCID claim</b> — unclaimed shares wait in escrow until the author binds their wallet. Zero gas for them.</li>
         </ul>
@@ -165,7 +165,7 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
         <Kicker>Four ways to settle · one product</Kicker>
         <h2 className="serif mt-4 text-4xl font-semibold leading-tight">Non-custodial by default. Pay your way.</h2>
         <p className="mt-4 text-base text-[var(--ink)]/75">
-          The 7715 grant keeps custody in <b>your</b> wallet until the split — but you choose the rail:
+          Authors are paid on Arc — pick the settlement path:
         </p>
         <ul className="mt-4 space-y-2 text-sm">
           {[
@@ -190,15 +190,15 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
         <Kicker>It&apos;s all real</Kicker>
         <h2 className="serif mt-4 text-4xl font-semibold leading-tight">No mocks in the critical path.</h2>
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat v="6" k="contracts live" />
-          <Stat v="112" k="tests green" />
+          <Stat v="8" k="contracts live" />
+          <Stat v="131" k="tests green" />
           <Stat v="5" k="on-chain agents" />
-          <Stat v="21" k="on-chain attestations" />
+          <Stat v="19" k="author payouts" />
         </div>
         <p className="mt-6 text-sm text-[var(--ink)]/75">
           Circle Gateway Gateway-batched relay on Base:{" "}
           <span className="font-mono text-[var(--accent)]">0x6f4c8d53…8480c</span> (type 0x4, gas in USDC).
-          x402 paid on-chain · ORCID OAuth · ERC-8004 reputation · x402 7710 facilitator.
+          x402 nanopayments on Arc · proof-of-grounding · USYC yield · ERC-8004 reputation · ORCID.
         </p>
       </div>
     ),
@@ -211,11 +211,11 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
         <h2 className="serif mt-4 text-4xl font-semibold leading-tight">One product. Every track.</h2>
         <ul className="mt-5 space-y-2 text-sm">
           {[
-            ["Best Agent", "5-agent mesh under one a wallet permission"],
-            ["Best A2A coordination", "literal Gateway settlement redelegation + reject/revise loop"],
-            ["Best x402 + Gateway settlement", "x402 micropayments + a 7710 facilitator on Circle Gateway"],
-            ["Best use of Venice AI", "five endpoints in the main flow"],
-            ["Best Circle Gateway", "Gateway-batched on Arc ✓"],
+            ["Autonomous Paying Agents (RFB-1)", "agent pays papers via x402 on Arc"],
+            ["Agent-to-Agent (RFB-3)", "recursive reverse-x402 + reject/revise loop"],
+            ["Creator Monetization (RFB-6)", "per-citation payouts + USYC yield"],
+            ["Proof-of-grounding", "only grounding authors are paid"],
+            ["Circle Gateway", "batched nanopayments, settled on Arc ✓"],
           ].map(([t, d]) => (
             <li key={t} className="flex items-baseline justify-between gap-3 rounded-md bg-[var(--paper-2)] px-4 py-2.5">
               <span className="font-medium text-[var(--accent)]">{t}</span>
@@ -273,29 +273,29 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
 /** Voiceover narration per slide (also rendered as on-screen subtitles). */
 const NARRATION: Record<string, string> = {
   title:
-    "Kuot — the research agent that the recursive citation economy on Arc. Built for the Lepton Agents Hackathon — Canteen × Circle × Arc.",
+    "Kuot — the recursive citation economy on Arc. Built for the Lepton Agents Hackathon — Canteen, Circle, and Arc.",
   problem:
-    "Here's the problem. A.I. scrapes humanity's research and pays the authors nothing. Every model is built on papers and writing by real people who are never cited, credited, or paid. The incentive to share knowledge quietly erodes.",
+    "Here's the problem. A.I. scrapes humanity's research and pays the authors nothing. Every model is built on papers by real people who are never cited, credited, or paid. The incentive to share knowledge quietly erodes.",
   solution:
-    "Our solution: an agent that cites and pays back. You grant one scoped budget. Kuot buys the papers it needs, reads them with Venice, and splits U.S.D.C. back to every author it cites — gas-free, non-custodial, and recorded on-chain. Every citation becomes a payment.",
+    "Our solution: an agent that pays its sources. Kuot buys the papers it needs with x-four-oh-two nanopayments on Arc, reads them with Venice, and splits U.S.D.C. back to every author whose work grounded the answer — gas-free and batched via Circle Gateway. Every citation becomes a payment.",
   permission:
-    "It starts with one signature. A single E.R.C. seventy-seven-fifteen Advanced Permission, via the Circle Agent Stack: up to ten U.S.D.C. for a twenty-four hour grant. A hard cap that auto-expires. You keep full custody — no blanket approval, no per-action popups.",
+    "And it has real agency. The agent runs from its own Circle Agent Wallet, under a spending cap it can never exceed. It decides which papers are worth buying, at sub-cent prices, thousands of times an hour. A budget it controls — not a script.",
   mesh:
-    "Under the hood it's a mesh, not a script. The Researcher redelegates strictly narrower budgets using Gateway — authority only ever shrinks. A Planner splits the question, a Reader fan-out answers in parallel, a Citation-Matcher weights who gets paid, and a Fact-checker can reject and force a revision. Five real on-chain agents that earn reputation.",
+    "Under the hood it's a mesh, not a script. A Planner splits the question, parallel Readers answer their slices, a Citation-Matcher weights who gets paid, and a Fact-checker can reject and force a revision. Five real on-chain agents that earn reputation.",
   venice:
     "The agents' brain is Venice — private and uncensored. Five Venice endpoints in the main flow: chat, web search, embeddings, image, and text-to-speech. The embeddings don't just deduplicate — they weight who gets paid.",
   pay:
-    "Then authors get paid — gas-free, on mainnet. The agent pays for papers via x-four-oh-two. Payouts relay through Circle Gateway on Arc with an E.I.P. seventy-seven-oh-two account upgrade, gas paid in U.S.D.C. Every citation's share is recorded on-chain, and the contract blocks double payment.",
+    "Then the authors get paid, on Arc. The agent settles with attest-and-split — recording who's owed and paying them in one transaction, gas in U.S.D.C., in under a second. And proof-of-grounding commits a digest of the answer, so only the authors who actually grounded it are paid.",
   settlement:
-    "And it's flexible. Non-custodial by default — funds stay in your wallet until the split. But you pick the rail: pay directly in one transaction with atomic, relay gas-free via Circle Gateway, escrow for an ORCID claim, or auto-pay on finish. We even offer a custodial, lock-upfront lock-upfront mode as an opt-in.",
+    "Unclaimed shares aren't idle — they earn real treasury yield in a U.S.Y.C. vault until the author claims with their ORCID. And reputation is staked as collateral, slashable on a false citation. Real stakes, not a number you ask to be trusted.",
   proof:
-    "And it's all real. No mocks in the critical path. Six contracts live, a hundred and twelve tests green, five on-chain agents, and a real Circle Gateway relay executed on Arc.",
+    "And it's all real. No mocks in the critical path. Eight contracts live on Arc, a hundred and thirty-one tests green, real U.S.D.C. flowing, and a real Circle Gateway batched settlement on chain.",
   tracks:
-    "One product covers every track: Best Agent, Best A2A coordination, Best x-four-oh-two and Gateway, Best use of Venice A.I., and Best Circle Gateway.",
+    "And here's the headline. Kuot's own answers are a paid resource. When another agent cites Kuot, a fraction of that nanopayment flows recursively back to the original authors — the citation graph pays itself, depth after depth. It spans Autonomous Paying Agents, Creator Monetization, and Agent-to-Agent networks.",
   demo:
-    "And you can see it all yourself. The live app has an interactive guided tour that narrates and points at every feature, navigating section to section on its own — and each research run explains itself, step by step. It's cozy, anime-styled, and fully on-chain.",
+    "And you can see it all yourself. The live app has an interactive guided tour that narrates and points at every feature, navigating section to section on its own — and each research run explains itself, step by step.",
   close:
-    "Kuot — an agent that pays the people it learns from. Try it live at kuot dot vercel dot app. Thank you.",
+    "Kuot — an agent that pays the people it learns from. Try it live at kuot dash azure dot vercel dot app. Thank you.",
 };
 
 export default function SlideDeck() {

@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export const metadata = {
   title: "Docs — Kuot",
-  description: "How Kuot works: one Agent Wallet policy permission, a redelegated agent mesh, x402, Venice, Circle Gateway, and on-chain author payouts.",
+  description: "How Kuot works: an agent that pays its sources via x402 nanopayments on Arc, proof-of-grounding, recursive reverse-x402, USYC yield, and Circle Gateway.",
 };
 
 const SCAN = "https://testnet.arcscan.app/address/";
@@ -23,14 +23,14 @@ const ENDPOINTS: [string, string][] = [
   ["GET /api/owed · /api/bonus", "An author's escrowed principal + accruing citation yield"],
   ["POST /api/claim", "Operator-relayed ORCID→wallet binding (NameRegistry)"],
   ["GET /api/paper/[id]", "x402-gated paper unlock (HTTP 402 → on-chain USDC)"],
-  ["/api/facilitator/{supported,verify,settle}", "An x402 7710 facilitator on the Circle Gateway"],
+  ["/api/facilitator/{supported,verify,settle}", "x402 + Circle Gateway facilitator (verify + settle)"],
   ["GET /api/venice-x402/quote · POST /pay", "Pay Venice itself via x402 (EIP-3009, USDC on Base)"],
   ["POST/GET /api/relayer-webhook", "Circle Gateway Ed25519 webhook receiver + status source"],
   ["POST/GET /api/share", "Publish/read a public result permalink"],
 ];
 const PROOFS: [string, string, string][] = [
-  ["Circle Gateway mainnet relay (single-hop, 7710+7702)", "0x6f4c8d539f9ea34f7e6e0d0730e4ae04fec1d986e5d0641b8b36ab00c6e8480c", "https://basescan.org/tx/"],
-  ["A2A 2-hop redelegation (end-to-end, Base)", "0x9bab119c6ffd46c0a23bf14b4d7e4101ba672e4ca7d8fc5e9e8708ecde3793c8", "https://basescan.org/tx/"],
+  ["Grounding proof committed on Arc", "0xad77a890ee39fe4327d3455f2c140bf21d4ff02dc4f332419f118329463c01ed", "https://testnet.arcscan.app/tx/"],
+  ["Settlement on Arc (attestAndSplit)", "0xd4f7988cc5ce80bcfa165eac7dcc9a6ac55f571ac0cebfe648b9df5418a7e36e", "https://testnet.arcscan.app/tx/"],
 ];
 
 function H({ id, children }: { id: string; children: React.ReactNode }) {
@@ -78,8 +78,8 @@ export default function Docs() {
           <p className="text-[11px] uppercase tracking-[0.2em] text-[var(--accent)]">Documentation</p>
           <h1 className="serif mt-1 text-4xl font-semibold tracking-tight">Kuot</h1>
           <p className="mt-3 max-w-2xl text-base leading-relaxed text-[var(--ink)]/80">
-            An autonomous AI research agent that cites <em>and pays</em> its sources. You grant one
-            scoped a wallet permission; the agent buys papers, reads them with Venice, and splits USDC
+            An autonomous AI research agent that cites <em>and pays</em> its sources. br
+            Kuot runs under a Circle Agent Wallet spending cap; the agent buys papers, reads them with Venice, and splits USDC
             back to every author it cites — gas-free, non-custodial, attested on-chain.
           </p>
 
@@ -95,14 +95,14 @@ export default function Docs() {
           <H id="how">How it works</H>
           <ol className="mt-3 space-y-3 text-sm leading-relaxed text-[var(--ink)]/80">
             <li><b>1 · Grant once.</b> Sign one Agent Wallet policy permission via a wallet. Keep custody; never sign again.</li>
-            <li><b>2 · The agents work.</b> The Researcher pays for papers via <b>x402</b>, redelegates narrowed budgets (<b>Gateway settlement</b>) to specialists, and reasons with <b>Venice</b>.</li>
+            <li><b>2 · The agents work.</b> The Researcher pays for papers via <b>x402</b>, delegates narrowed scopes to specialists, and reasons with <b>Venice</b>.</li>
             <li><b>3 · Authors are paid.</b> The payout is attested on-chain and relayed gas-free via the <b>Circle Gateway</b>. Unclaimed shares wait in escrow (and earn a loyalty yield) until the author binds their <b>ORCID</b>.</li>
           </ol>
 
           <H id="mesh">The agent mesh (A2A)</H>
           <p className="mt-3 text-sm leading-relaxed text-[var(--ink)]/80">
             Five specialist agents, each a real on-chain principal in the ERC-8004 registry. The
-            Researcher <b>redelegates</b> strictly narrower budgets — authority only ever shrinks:
+            Researcher delegates strictly narrower scopes to specialists — authority only ever shrinks:
           </p>
           <ul className="mt-3 space-y-1.5 text-sm">
             {[
@@ -173,12 +173,12 @@ export default function Docs() {
           </ul>
           <p className="mt-3 text-sm text-[var(--ink)]/70">
             Plus live attestations on the <Link href="/dashboard/activity" className="link-accent">Activity</Link> page,
-            real <code>attestAndSplit</code> USDC transfers, and the x402 7710 facilitator. 100 tests (37 Foundry + 63 Vitest), no mocks in the critical path.
+            real <code>attestAndSplit</code> USDC transfers, and the x402 + Gateway facilitator. 131 tests (51 Foundry + 80 Vitest), no mocks in the critical path.
           </p>
 
           <H id="tech">Tech &amp; tracks</H>
           <p className="mt-3 text-sm leading-relaxed text-[var(--ink)]/80">
-            <b>Circle Agent Stack</b> (Agent Wallet policy grant, Gateway settlement redeem, redelegation) ·
+            <b>Circle Agent Stack</b> (Agent Wallets, Gateway nanopayments, App Kit Swap) ·
             <b> Venice AI</b> (chat, web-search, embeddings, image, TTS) · <b>Circle Gateway</b> permissionless
             (batching, gas in USDC, Ed25519 webhooks) · <b>x402</b> · Next.js · viem · wagmi ·
             Foundry. Qualifies for Best Agent, Best A2A coordination, Best x402 + Gateway settlement, Best use of
