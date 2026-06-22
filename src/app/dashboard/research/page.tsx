@@ -677,7 +677,7 @@ export default function ResearchPage() {
       {/* Progress stepper */}
       {(() => {
         const phase = grant.status !== "granted" ? 0 : research.status === "done" ? 2 : 1;
-        const steps = ["Grant budget", "Research", "Settle & pay"];
+        const steps = ["Set budget", "Research", "Settle & pay"];
         return (
           <div data-tour="stepper" className="mb-8 flex flex-wrap items-center gap-1.5 text-[11px]">
             {steps.map((s, i) => (
@@ -865,7 +865,7 @@ export default function ResearchPage() {
               ? "Awaiting signature…"
               : grant.status === "granted"
                 ? "✓ Budget granted"
-                : "Grant budget"}
+                : "Set budget"}
           </button>
           {grant.status === "granted" ? (
             <>
@@ -898,7 +898,7 @@ export default function ResearchPage() {
           <p className="mt-2 text-[11px] text-emerald-600">
             ✓ Budget revoked on-chain —{" "}
             <a
-              href={`https://sepolia.etherscan.io/tx/${revoke.tx}`}
+              href={`https://testnet.arcscan.app/tx/${revoke.tx}`}
               target="_blank"
               rel="noreferrer"
               className="underline"
@@ -1170,7 +1170,7 @@ export default function ResearchPage() {
             </span>
             {research.result.x402?.paid ? (
               <a
-                href={`https://sepolia.etherscan.io/tx/${research.result.x402.txHash}`}
+                href={`https://testnet.arcscan.app/tx/${research.result.x402.txHash}`}
                 target="_blank"
                 rel="noreferrer"
                 className="ml-2 inline-block rounded-full bg-blue-100 px-2.5 py-0.5 text-[10px] font-medium text-blue-700 underline dark:bg-blue-950 dark:text-blue-300"
@@ -1232,13 +1232,13 @@ export default function ResearchPage() {
                 {prefundState.lockTx ? (
                   <>
                     {" · "}
-                    <a href={`https://sepolia.etherscan.io/tx/${prefundState.lockTx}`} target="_blank" rel="noreferrer" className="underline">lock tx</a>
+                    <a href={`https://testnet.arcscan.app/tx/${prefundState.lockTx}`} target="_blank" rel="noreferrer" className="underline">lock tx</a>
                   </>
                 ) : null}
                 {prefundState.splitTx ? (
                   <>
                     {" · "}
-                    <a href={`https://sepolia.etherscan.io/tx/${prefundState.splitTx}`} target="_blank" rel="noreferrer" className="underline">split tx</a>
+                    <a href={`https://testnet.arcscan.app/tx/${prefundState.splitTx}`} target="_blank" rel="noreferrer" className="underline">split tx</a>
                   </>
                 ) : null}
               </p>
@@ -1454,7 +1454,7 @@ export default function ResearchPage() {
                         {payDirect.status === "done" ? (
                           <p className="mt-2 text-[11px] text-emerald-600">
                             ✓ Authors paid on-chain —{" "}
-                            <a href={`https://sepolia.etherscan.io/tx/${payDirect.tx}`} target="_blank" rel="noreferrer" className="underline">
+                            <a href={`https://testnet.arcscan.app/tx/${payDirect.tx}`} target="_blank" rel="noreferrer" className="underline">
                               view tx
                             </a>
                             .
@@ -1562,7 +1562,7 @@ export default function ResearchPage() {
                     r.txHash ? (
                       <a
                         key={r.agent}
-                        href={`https://sepolia.etherscan.io/tx/${r.txHash}`}
+                        href={`https://testnet.arcscan.app/tx/${r.txHash}`}
                         target="_blank"
                         rel="noreferrer"
                         title={`${r.agent} +1 rep — view tx`}

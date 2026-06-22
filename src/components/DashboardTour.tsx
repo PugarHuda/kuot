@@ -33,16 +33,16 @@ type Step = { href: string; selector: string; title: string; narration: string }
  *  `window.dispatchEvent(new Event("kuot:start-tour"))`. */
 const STEPS: Step[] = [
   // ── Overview ──
-  { href: "/dashboard", selector: 'aside a[href="/dashboard"]', title: "Overview", narration: "Welcome to Kuot — the research agent that cites and pays its sources. Let's walk the whole product. We start on Overview." },
+  { href: "/dashboard", selector: 'aside a[href="/dashboard"]', title: "Overview", narration: "Welcome to Kuot — the recursive citation economy on Arc. Let's walk the whole product. We start on Overview." },
   { href: "/dashboard", selector: '[data-tour="ov-stats"]', title: "Overview · live stats", narration: "These four tiles are live on-chain reads from Arc: how many attestations were recorded, how many author payouts went out, the total U.S.D.C. attributed to authors, and how many distinct authors have been cited. Nothing here is hard-coded." },
   { href: "/dashboard", selector: '[data-tour="ov-actions"]', title: "Overview · quick actions", narration: "Below that are quick actions — jump straight into running a query, viewing on-chain activity, or claiming rewards as an author." },
-  { href: "/dashboard", selector: '[data-tour="ov-recent"]', title: "Overview · recent attestations", narration: "And the latest attestations, newest first. Each row links to the real transaction on Etherscan — the citation, and the payment, are the same on-chain record." },
+  { href: "/dashboard", selector: '[data-tour="ov-recent"]', title: "Overview · recent attestations", narration: "And the latest attestations, newest first. Each row links to the real transaction on ArcScan — the citation, and the payment, are the same on-chain record." },
 
   // ── Research ──
-  { href: "/dashboard/research", selector: 'aside a[href="/dashboard/research"]', title: "Research", narration: "Research is the heart of it — where you grant a budget, ask a question, and the agents answer and pay. Let's look at the pieces." },
-  { href: "/dashboard/research", selector: '[data-tour="stepper"]', title: "Research · the three steps", narration: "The flow is three steps: grant a budget, run the research, then settle and pay the authors. This stepper tracks where you are." },
-  { href: "/dashboard/research", selector: '[data-tour="budget"]', title: "Research · grant a budget", narration: "Step one — you sign one E.R.C. seventy-seven-fifteen Advanced Permission: a scoped U.S.D.C. budget the agent can never exceed. Nothing leaves your wallet; it's a cap, with a live countdown until it expires. A custodial lock-upfront mode is offered as an opt-in." },
-  { href: "/dashboard/research", selector: '[data-tour="mesh"]', title: "Research · the agent mesh", narration: "The Researcher then redelegates strictly narrower slices of that budget to each specialist — authority only ever shrinks. That's real agent-to-agent coordination over E.R.C. seventy-seven-ten." },
+  { href: "/dashboard/research", selector: 'aside a[href="/dashboard/research"]', title: "Research", narration: "Research is the heart of it — where the agent pays for its sources, grounds an answer, and pays the authors. Let's look at the pieces." },
+  { href: "/dashboard/research", selector: '[data-tour="stepper"]', title: "Research · the three steps", narration: "The flow is three steps: ask a question, the agents research and pay the sources, then settle to the authors. This stepper tracks where you are." },
+  { href: "/dashboard/research", selector: '[data-tour="budget"]', title: "Research · the budget", narration: "Step one — the agent runs from its own Circle Agent Wallet, under a U.S.D.C. spending cap it can never exceed. It pays a sub-cent nanopayment per paper via x402 on Arc — real agency, a budget it controls." },
+  { href: "/dashboard/research", selector: '[data-tour="mesh"]', title: "Research · the agent mesh", narration: "The Researcher delegates strictly narrower scopes to each specialist — authority only ever shrinks. That is real agent-to-agent coordination." },
   { href: "/dashboard/research", selector: '[data-tour="ask"]', title: "Research · ask anything", narration: "Step two — ask your question. You pick how many papers, an optional year range, and the answer language. There's even auto-pay, which settles the authors on-chain the moment a run finishes. After a run, hit Explain this result for a deeper step-by-step tour of the answer." },
 
   // ── Library ──

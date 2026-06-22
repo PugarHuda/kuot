@@ -81,7 +81,7 @@ export default function Overview() {
             d.events.slice(0, 5).map((e) => (
               <a
                 key={e.txHash}
-                href={`https://sepolia.etherscan.io/tx/${e.txHash}`}
+                href={`https://testnet.arcscan.app/tx/${e.txHash}`}
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center justify-between bg-[var(--paper-2)] px-4 py-3 text-xs transition hover:bg-[var(--accent-soft)]"

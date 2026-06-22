@@ -26,7 +26,7 @@ export default function AgentsPage() {
       <p className="text-[11px] uppercase tracking-[0.15em] text-[var(--accent)]">Multi-agent system</p>
       <h1 className="serif mt-1 text-3xl font-semibold tracking-tight">Agents</h1>
       <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--ink)]/70">
-        Kuot is a mesh of specialized agents. The Researcher holds your granted permission and
+        Kuot is a mesh of specialized agents. The Researcher holds the agent-wallet budget and
         <span className="serif italic"> redelegates</span> strictly narrower budgets to each
         specialist — authority only ever shrinks . Each is a real on-chain principal in the{" "}
         <a href="https://eips.ethereum.org/EIPS/eip-8004" target="_blank" rel="noreferrer" className="link-accent">
@@ -80,7 +80,7 @@ export default function AgentsPage() {
         <p className="mt-6 text-xs text-[var(--muted)]">
           On-chain registry:{" "}
           <a
-            href={`https://sepolia.etherscan.io/address/${registry}`}
+            href={`https://testnet.arcscan.app/address/${registry}`}
             target="_blank"
             rel="noreferrer"
             className="link-accent"

@@ -95,7 +95,7 @@ export default function ActivityPage() {
           events.map((e) => (
             <a
               key={e.txHash + e.queryId}
-              href={`https://sepolia.etherscan.io/tx/${e.txHash}`}
+              href={`https://testnet.arcscan.app/tx/${e.txHash}`}
               target="_blank"
               rel="noreferrer"
               className="flex items-center justify-between gap-4 bg-[var(--paper-2)] p-4 transition hover:bg-[var(--accent-soft)]"

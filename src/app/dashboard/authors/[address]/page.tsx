@@ -45,7 +45,7 @@ export default function AuthorProfile({ params }: { params: Promise<{ address: s
           d.payments.map((p) => (
             <a
               key={p.txHash + p.queryId}
-              href={`https://sepolia.etherscan.io/tx/${p.txHash}`}
+              href={`https://testnet.arcscan.app/tx/${p.txHash}`}
               target="_blank"
               rel="noreferrer"
               className="flex items-center justify-between bg-[var(--paper-2)] px-4 py-3 text-xs transition hover:bg-[var(--accent-soft)]"

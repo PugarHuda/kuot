@@ -215,7 +215,7 @@ export default function ClaimPage() {
         {claim.status === "done" ? (
           <p className="rounded-md bg-emerald-50 p-3 text-xs text-emerald-700 dark:bg-emerald-950/40">
             ✓ Bound on-chain.{" "}
-            <a href={`https://sepolia.etherscan.io/tx/${claim.txHash}`} target="_blank" rel="noreferrer" className="underline">
+            <a href={`https://testnet.arcscan.app/tx/${claim.txHash}`} target="_blank" rel="noreferrer" className="underline">
               View transaction
             </a>
           </p>
@@ -251,7 +251,7 @@ export default function ClaimPage() {
               {withdrawTx && !withdrawTx.startsWith("error") ? (
                 <p className="mt-2 text-[11px] text-emerald-700">
                   ✓{" "}
-                  <a href={`https://sepolia.etherscan.io/tx/${withdrawTx}`} target="_blank" rel="noreferrer" className="underline">
+                  <a href={`https://testnet.arcscan.app/tx/${withdrawTx}`} target="_blank" rel="noreferrer" className="underline">
                     withdrawal tx
                   </a>
                 </p>
@@ -295,7 +295,7 @@ export default function ClaimPage() {
                 {bonusTx && !bonusTx.startsWith("error") ? (
                   <p className="mt-2 text-[11px] text-emerald-700">
                     ✓{" "}
-                    <a href={`https://sepolia.etherscan.io/tx/${bonusTx}`} target="_blank" rel="noreferrer" className="underline">
+                    <a href={`https://testnet.arcscan.app/tx/${bonusTx}`} target="_blank" rel="noreferrer" className="underline">
                       bonus tx
                     </a>
                   </p>

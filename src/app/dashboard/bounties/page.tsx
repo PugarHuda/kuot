@@ -193,8 +193,8 @@ export default function BountiesPage() {
                   <a
                     href={
                       b.txHash
-                        ? `https://sepolia.etherscan.io/tx/${b.txHash}`
-                        : `https://sepolia.etherscan.io/address/${BOUNTY_MARKET}`
+                        ? `https://testnet.arcscan.app/tx/${b.txHash}`
+                        : `https://testnet.arcscan.app/address/${BOUNTY_MARKET}`
                     }
                     target="_blank"
                     rel="noreferrer"
