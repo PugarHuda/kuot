@@ -33,21 +33,16 @@ declare module "wagmi" {
 }
 
 /**
- * Pick the MetaMask **Flask** connector specifically (EIP-6963 announces it as
- * rdns `io.metamask.flask` / name "MetaMask Flask"). ERC-7715 Advanced
- * Permissions only run on Flask, and selecting the exact provider avoids the
- * ambiguous `window.ethereum` (which, with both regular MetaMask + Flask
- * installed, would otherwise connect the wrong wallet — or both).
+ * Pick a wallet connector. Kuot works with ANY EIP-6963 injected wallet (MetaMask,
+ * Rabby, Coinbase Wallet, Brave, etc.) — the only thing the user signs is a one-off
+ * binding when claiming author payouts, so no wallet-specific feature is required.
+ * We prefer a real injected provider but fall back to whatever the browser exposes.
  */
 export function pickFlaskConnector(connectors: readonly Connector[]): Connector | undefined {
-  const isFlask = (c: Connector) => {
+  const isInjected = (c: Connector) => {
     const rdns = (c as { rdns?: string | readonly string[] }).rdns;
-    const rdnsMatch = Array.isArray(rdns) ? rdns.includes("io.metamask.flask") : rdns === "io.metamask.flask";
-    return rdnsMatch || c.id === "io.metamask.flask" || /flask/i.test(c.name);
+    return c.type === "injected" || Boolean(rdns) || /metamask|rabby|coinbase|brave|wallet|injected/i.test(c.name);
   };
-  // Prefer the EIP-6963-tagged Flask provider (rdns), else any /flask/ named connector.
-  return connectors.find((c) => {
-    const rdns = (c as { rdns?: string | readonly string[] }).rdns;
-    return Array.isArray(rdns) ? rdns.includes("io.metamask.flask") : rdns === "io.metamask.flask";
-  }) ?? connectors.find(isFlask);
+  // Any discovered injected wallet works; default to the first one announced.
+  return connectors.find(isInjected) ?? connectors[0];
 }

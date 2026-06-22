@@ -50,7 +50,7 @@ export function Sidebar() {
   }, [wrongNetwork, switchChain]);
 
   return (
-    <aside className="sticky top-0 flex h-dvh w-60 shrink-0 flex-col border-r border-[var(--rule)] bg-[var(--paper-2)] px-4 py-5">
+    <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-[var(--rule)] bg-[var(--paper-2)] px-4 py-5 md:flex">
       <Link href="/" className="mb-4 flex items-center gap-2.5 px-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo.svg" alt="" width={26} height={26} />
