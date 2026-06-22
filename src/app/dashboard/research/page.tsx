@@ -73,7 +73,7 @@ const OPERATOR_ADDRESS =
 
 /** Narrated full-flow walkthrough — spotlights each part of the run in turn. */
 const TOUR_STEPS: TourStep[] = [
-  { selector: "[data-tour=stepper]", title: "The flow", narration: "Kuot works in three steps — grant a budget, research, then settle and pay. Let me walk you through a completed run." },
+  { selector: "[data-tour=stepper]", title: "The flow", narration: "Kuot works in three steps — ask, the agents research and pay the sources, then settle to the authors. Let me walk you through a completed run." },
   { selector: "[data-tour=budget]", title: "One spending budget", narration: "First, the user signed a single E.R.C. seventy-seven-fifteen permission — a scoped U.S.D.C. budget. It's a hard cap with a live countdown, and nothing was charged up front. The funds stay in your wallet." },
   { selector: "[data-tour=mesh]", title: "A2A redelegation", narration: "The Researcher then redelegates strictly narrower budgets to specialist agents. Authority only ever shrinks — that's the agent-to-agent coordination model." },
   { selector: "[data-tour=ask]", title: "Ask a question", narration: "The user asks a question. The agent searches a real two-hundred-fifty-million-paper index, then reasons with Venice — private and uncensored." },
@@ -82,7 +82,7 @@ const TOUR_STEPS: TourStep[] = [
   { selector: "[data-tour=trace]", title: "Multi-agent trace", narration: "Here is how it actually ran. The Researcher redelegated narrower budgets to a Planner, parallel Readers, a Fact-checker that can force a revision, and a Summarizer — each a real on-chain agent that earns reputation." },
   { selector: "[data-tour=payout]", title: "Author payout plan", narration: "Every cited author gets a U.S.D.C. share, weighted by Venice embeddings. Demo wallets are shown until the real author claims with their ORCID." },
   { selector: "[data-tour=settle]", title: "Settle on-chain", narration: "One click here records the attestation and pays every author in a single transaction — no settlement fee, and the contract blocks double payment." },
-  { selector: "[data-tour=receipt]", title: "Citation receipt", narration: "Finally, an on-brand citation receipt you can download, plus a Venice-generated image and a spoken briefing. That's Kuot — an agent that cites and pays its sources." },
+  { selector: "[data-tour=receipt]", title: "Citation receipt", narration: "Finally, an on-brand citation receipt you can download, plus a Venice-generated image and a spoken briefing. That's Kuot — the recursive citation economy on Arc." },
 ];
 
 const RESEARCH_STEPS = [
@@ -1210,7 +1210,7 @@ export default function ResearchPage() {
                   ) : (
                     <span className="text-[var(--muted)]">
                       💸 <b className="text-[var(--ink)]">No active budget</b> — the agent ran <b>unfunded</b>, so it skipped the
-                      x402 paper purchase (read free metadata only). <b>Grant a budget above</b> to let the agent buy papers
+                      x402 paper purchase (read free metadata only). <b>Fund the agent above</b> to let it buy papers
                       (~0.01 USDC/run, within your cap).
                     </span>
                   )}

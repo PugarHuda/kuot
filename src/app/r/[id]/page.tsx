@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const q = data?.result.query;
   return {
     title: q ? `${q.slice(0, 60)} — Kuot` : "Kuot — shared research",
-    description: data?.result.summary?.slice(0, 160) ?? "An AI research agent that cites and pays its sources.",
+    description: data?.result.summary?.slice(0, 160) ?? "An AI agent that pays its sources — the recursive citation economy on Arc.",
   };
 }
 
@@ -73,7 +73,7 @@ export default async function SharedResultPage({ params }: { params: Promise<{ i
           <Link href="/" className="link-accent font-medium underline">
             Kuot
           </Link>{" "}
-          — the research agent that cites <em>and pays</em> its sources.
+          — the recursive citation economy on Arc.
         </span>
         <Link href="/dashboard/research" className="rounded-md bg-[var(--accent)] px-3 py-1.5 font-medium text-white">
           Run your own →

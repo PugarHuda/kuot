@@ -48,7 +48,7 @@ export default function Overview() {
       {/* Quick actions */}
       <div data-tour="ov-actions" className="mt-8 grid gap-4 sm:grid-cols-3">
         {[
-          { href: "/dashboard/research", t: "Run a query", d: "Grant a budget, research, and pay authors.", g: "❝" },
+          { href: "/dashboard/research", t: "Run a query", d: "Ask a question — the agent researches and pays the authors.", g: "❝" },
           { href: "/dashboard/activity", t: "View activity", d: "On-chain attestations + author leaderboard.", g: "≣" },
           { href: "/dashboard/claim", t: "Claim rewards", d: "Authors: bind ORCID, withdraw earnings.", g: "◉" },
         ].map((a) => (
