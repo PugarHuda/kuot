@@ -181,8 +181,7 @@ export default function Docs() {
             <b>Circle Agent Stack</b> (Agent Wallets, Gateway nanopayments, App Kit Swap) ·
             <b> Venice AI</b> (chat, web-search, embeddings, image, TTS) · <b>Circle Gateway</b> permissionless
             (batching, gas in USDC, Ed25519 webhooks) · <b>x402</b> · Next.js · viem · wagmi ·
-            Foundry. Qualifies for Best Agent, Best A2A coordination, Best x402 + Gateway settlement, Best use of
-            Venice AI, and Best Use of the Circle Gateway Nanopayments.
+            Foundry. Spans RFB-1 Autonomous Paying Agents, RFB-3 Agent-to-Agent, and RFB-6 Creator Monetization.
           </p>
 
           <footer className="mt-12 border-t border-[var(--rule)] pt-5 text-xs text-[var(--muted)]">
