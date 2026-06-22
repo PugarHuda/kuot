@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Kuot — the research agent that cites and pays its sources";
+export const alt = "Kuot — the recursive citation economy on Arc";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -42,10 +42,10 @@ export default function OpengraphImage() {
               fontWeight: 800,
             }}
           >
-            S
+            K
           </div>
           <div style={{ fontSize: 26, letterSpacing: 4, color: muted, textTransform: "uppercase" }}>
-            MetaMask Smart Accounts · 1Shot · Venice AI
+            Circle Agent Stack · Gateway · Arc
           </div>
         </div>
 
@@ -54,9 +54,8 @@ export default function OpengraphImage() {
             Kuot
           </div>
           <div style={{ marginTop: 24, fontSize: 44, color: ink, display: "flex", flexWrap: "wrap" }}>
-            The research agent that cites
-            <span style={{ color: accent, fontStyle: "italic", marginLeft: 14, marginRight: 14 }}>and pays</span>
-            its sources.
+            The recursive citation economy
+            <span style={{ color: accent, fontStyle: "italic", marginLeft: 14 }}>on Arc</span>.
           </div>
         </div>
 
@@ -74,7 +73,7 @@ export default function OpengraphImage() {
             }}
           >
             <div style={{ width: 14, height: 14, borderRadius: 999, background: accent, display: "flex" }} />
-            live on Sepolia
+            live on Arc
           </div>
           <div style={{ fontSize: 26, color: muted, border: `1px solid ${rule}`, borderRadius: 999, padding: "10px 22px" }}>
             every citation is a real USDC payment

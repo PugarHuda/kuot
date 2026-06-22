@@ -64,7 +64,7 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
         </h2>
         <p className="mt-6 text-lg leading-relaxed text-[var(--ink)]/75">
           You grant <b>one</b> scoped budget. Kuot buys the papers it needs, reads them with Venice,
-          and splits USDC back to <b>every author it cites</b> — gasless, non-custodial, and recorded
+          and splits USDC back to <b>every author it cites</b> — gas-free, non-custodial, and recorded
           on-chain. Every citation becomes a payment.
         </p>
       </div>
@@ -148,10 +148,10 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
     render: (
       <div className="max-w-2xl">
         <Kicker>x402 + Circle Gateway · the rails</Kicker>
-        <h2 className="serif mt-4 text-4xl font-semibold leading-tight">Authors get paid — gasless, on mainnet.</h2>
+        <h2 className="serif mt-4 text-4xl font-semibold leading-tight">Authors get paid — gas-free, on mainnet.</h2>
         <ul className="mt-5 space-y-3 text-base text-[var(--ink)]/80">
           <li>💸 <b>x402</b> — the agent pays a real USDC micropayment to unlock papers, verified on-chain.</li>
-          <li>⛽ <b>Circle Gateway</b> — payouts relayed gaslessly on <b>Arc</b> with an <b>EIP-7702</b> account upgrade. Gas paid in USDC.</li>
+          <li>⛽ <b>Circle Gateway</b> — payouts relayed gas-free on <b>Arc</b> . Gas paid in USDC.</li>
           <li>📜 <b>On-chain attestation</b> — <i>attestAndSplit</i> records who&apos;s owed <b>and</b> pays them in one tx. The contract blocks re-attesting, so each author is paid <b>once</b>.</li>
           <li>🪪 <b>ORCID claim</b> — unclaimed shares wait in escrow until the author binds their wallet. Zero gas for them.</li>
         </ul>
@@ -169,10 +169,10 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
         </p>
         <ul className="mt-4 space-y-2 text-sm">
           {[
-            ["Direct (primary)", "attestAndSplit — records + pays in one tx, no relayer fee"],
-            ["Circle Gateway relay", "gasless, gas paid in USDC (Arc or Base Arc)"],
+            ["Direct (primary)", "attestAndSplit — records + pays in one tx, atomic"],
+            ["Circle Gateway relay", "gas-free, gas paid in USDC (Arc or Base Arc)"],
             ["Escrow → ORCID", "hold unclaimed shares for authors to claim later"],
-            ["Auto-pay / Upfront", "settle on finish, or lock the pool first (Kutip-style)"],
+            ["Auto-pay / Upfront", "settle on finish, or lock the pool first (lock-upfront)"],
           ].map(([t, d]) => (
             <li key={t} className="flex items-baseline justify-between gap-3 rounded-md bg-[var(--paper-2)] px-4 py-2.5">
               <span className="font-medium text-[var(--accent)]">{t}</span>
@@ -196,7 +196,7 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
           <Stat v="21" k="on-chain attestations" />
         </div>
         <p className="mt-6 text-sm text-[var(--ink)]/75">
-          Circle Gateway 7710 + 7702 relay on Base:{" "}
+          Circle Gateway Gateway-batched relay on Base:{" "}
           <span className="font-mono text-[var(--accent)]">0x6f4c8d53…8480c</span> (type 0x4, gas in USDC).
           x402 paid on-chain · ORCID OAuth · ERC-8004 reputation · x402 7710 facilitator.
         </p>
@@ -215,7 +215,7 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
             ["Best A2A coordination", "literal Gateway settlement redelegation + reject/revise loop"],
             ["Best x402 + Gateway settlement", "x402 micropayments + a 7710 facilitator on Circle Gateway"],
             ["Best use of Venice AI", "five endpoints in the main flow"],
-            ["Best Circle Gateway Relayer", "7710 + 7702 relayed on Arc ✓"],
+            ["Best Circle Gateway", "Gateway-batched on Arc ✓"],
           ].map(([t, d]) => (
             <li key={t} className="flex items-baseline justify-between gap-3 rounded-md bg-[var(--paper-2)] px-4 py-2.5">
               <span className="font-medium text-[var(--accent)]">{t}</span>
@@ -273,25 +273,25 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
 /** Voiceover narration per slide (also rendered as on-screen subtitles). */
 const NARRATION: Record<string, string> = {
   title:
-    "Kuot — the research agent that cites and pays its sources. Built for the Lepton Agents Hackathon — Canteen × Circle × Arc.",
+    "Kuot — the research agent that the recursive citation economy on Arc. Built for the Lepton Agents Hackathon — Canteen × Circle × Arc.",
   problem:
     "Here's the problem. A.I. scrapes humanity's research and pays the authors nothing. Every model is built on papers and writing by real people who are never cited, credited, or paid. The incentive to share knowledge quietly erodes.",
   solution:
-    "Our solution: an agent that cites and pays. You grant one scoped budget. Kuot buys the papers it needs, reads them with Venice, and splits U.S.D.C. back to every author it cites — gasless, non-custodial, and recorded on-chain. Every citation becomes a payment.",
+    "Our solution: an agent that cites and pays back. You grant one scoped budget. Kuot buys the papers it needs, reads them with Venice, and splits U.S.D.C. back to every author it cites — gas-free, non-custodial, and recorded on-chain. Every citation becomes a payment.",
   permission:
     "It starts with one signature. A single E.R.C. seventy-seven-fifteen Advanced Permission, via the Circle Agent Stack: up to ten U.S.D.C. for a twenty-four hour grant. A hard cap that auto-expires. You keep full custody — no blanket approval, no per-action popups.",
   mesh:
-    "Under the hood it's a mesh, not a script. The Researcher redelegates strictly narrower budgets using E.R.C. seventy-seven-ten — authority only ever shrinks. A Planner splits the question, a Reader fan-out answers in parallel, a Citation-Matcher weights who gets paid, and a Fact-checker can reject and force a revision. Five real on-chain agents that earn reputation.",
+    "Under the hood it's a mesh, not a script. The Researcher redelegates strictly narrower budgets using Gateway — authority only ever shrinks. A Planner splits the question, a Reader fan-out answers in parallel, a Citation-Matcher weights who gets paid, and a Fact-checker can reject and force a revision. Five real on-chain agents that earn reputation.",
   venice:
     "The agents' brain is Venice — private and uncensored. Five Venice endpoints in the main flow: chat, web search, embeddings, image, and text-to-speech. The embeddings don't just deduplicate — they weight who gets paid.",
   pay:
-    "Then authors get paid — gasless, on mainnet. The agent pays for papers via x-four-oh-two. Payouts relay through Circle Gateway on Arc with an E.I.P. seventy-seven-oh-two account upgrade, gas paid in U.S.D.C. Every citation's share is recorded on-chain, and the contract blocks double payment.",
+    "Then authors get paid — gas-free, on mainnet. The agent pays for papers via x-four-oh-two. Payouts relay through Circle Gateway on Arc with an E.I.P. seventy-seven-oh-two account upgrade, gas paid in U.S.D.C. Every citation's share is recorded on-chain, and the contract blocks double payment.",
   settlement:
-    "And it's flexible. Non-custodial by default — funds stay in your wallet until the split. But you pick the rail: pay directly in one transaction with no relayer fee, relay gaslessly via Circle Gateway, escrow for an ORCID claim, or auto-pay on finish. We even offer a custodial, Kutip-style lock-upfront mode as an opt-in.",
+    "And it's flexible. Non-custodial by default — funds stay in your wallet until the split. But you pick the rail: pay directly in one transaction with atomic, relay gas-free via Circle Gateway, escrow for an ORCID claim, or auto-pay on finish. We even offer a custodial, lock-upfront lock-upfront mode as an opt-in.",
   proof:
     "And it's all real. No mocks in the critical path. Six contracts live, a hundred and twelve tests green, five on-chain agents, and a real Circle Gateway relay executed on Arc.",
   tracks:
-    "One product covers every track: Best Agent, Best A2A coordination, Best x-four-oh-two and E.R.C. seventy-seven-ten, Best use of Venice A.I., and Best Circle Gateway Relayer.",
+    "One product covers every track: Best Agent, Best A2A coordination, Best x-four-oh-two and Gateway, Best use of Venice A.I., and Best Circle Gateway.",
   demo:
     "And you can see it all yourself. The live app has an interactive guided tour that narrates and points at every feature, navigating section to section on its own — and each research run explains itself, step by step. It's cozy, anime-styled, and fully on-chain.",
   close:

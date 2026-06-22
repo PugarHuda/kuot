@@ -80,7 +80,7 @@ export default function Docs() {
           <p className="mt-3 max-w-2xl text-base leading-relaxed text-[var(--ink)]/80">
             An autonomous AI research agent that cites <em>and pays</em> its sources. You grant one
             scoped a wallet permission; the agent buys papers, reads them with Venice, and splits USDC
-            back to every author it cites — gasless, non-custodial, attested on-chain.
+            back to every author it cites — gas-free, non-custodial, attested on-chain.
           </p>
 
           <H id="overview">Overview</H>
@@ -96,7 +96,7 @@ export default function Docs() {
           <ol className="mt-3 space-y-3 text-sm leading-relaxed text-[var(--ink)]/80">
             <li><b>1 · Grant once.</b> Sign one Agent Wallet policy permission via a wallet. Keep custody; never sign again.</li>
             <li><b>2 · The agents work.</b> The Researcher pays for papers via <b>x402</b>, redelegates narrowed budgets (<b>Gateway settlement</b>) to specialists, and reasons with <b>Venice</b>.</li>
-            <li><b>3 · Authors are paid.</b> The payout is attested on-chain and relayed gasless via the <b>Circle Gateway</b> relayer. Unclaimed shares wait in escrow (and earn a loyalty yield) until the author binds their <b>ORCID</b>.</li>
+            <li><b>3 · Authors are paid.</b> The payout is attested on-chain and relayed gas-free via the <b>Circle Gateway</b>. Unclaimed shares wait in escrow (and earn a loyalty yield) until the author binds their <b>ORCID</b>.</li>
           </ol>
 
           <H id="mesh">The agent mesh (A2A)</H>
@@ -180,9 +180,9 @@ export default function Docs() {
           <p className="mt-3 text-sm leading-relaxed text-[var(--ink)]/80">
             <b>Circle Agent Stack</b> (Agent Wallet policy grant, Gateway settlement redeem, redelegation) ·
             <b> Venice AI</b> (chat, web-search, embeddings, image, TTS) · <b>Circle Gateway</b> permissionless
-            relayer (EIP-7702, gas in USDC, Ed25519 webhooks) · <b>x402</b> · Next.js · viem · wagmi ·
+            (batching, gas in USDC, Ed25519 webhooks) · <b>x402</b> · Next.js · viem · wagmi ·
             Foundry. Qualifies for Best Agent, Best A2A coordination, Best x402 + Gateway settlement, Best use of
-            Venice AI, and Best Use of the Circle Gateway Permissionless Relayer.
+            Venice AI, and Best Use of the Circle Gateway Nanopayments.
           </p>
 
           <footer className="mt-12 border-t border-[var(--rule)] pt-5 text-xs text-[var(--muted)]">
