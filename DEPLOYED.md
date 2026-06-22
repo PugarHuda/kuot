@@ -55,10 +55,13 @@ Deployer/operator/agent: `0x31481ADc889B5e00b70846F59967DAF09CBe4a3e`
   Arc testnet, so pay EU authors by **transferring EURC directly** (EURC `0x89B5…D72a` is native on
   Arc) — no swap. `payAuthorEurc()` is ready; only needs the operator funded with testnet EURC (Circle
   faucet → Arc Testnet → EURC).
-- **Agent Wallet as payer — solution.** The Circle Agent Wallet can't be a Gateway `BatchEvmSigner`
-  (it signs via Circle's API, not a raw key), but it CAN pay authors directly via
-  `agent-wallet.ts:transferUSDC` (Circle `createTransaction`). That routes author payouts through the
-  Circle-managed Agent Wallet (server-side), making it the real payer.
+- **Agent Wallet as payer — SOLVED, live.** The Circle Agent Wallet can't be a Gateway
+  `BatchEvmSigner` (it signs via Circle's API, not a raw key), but it pays authors directly via
+  Circle `createTransaction`. Proven: Agent Wallet **`0x69906004…7cea`** (walletId
+  `c2092a3d-e7b4-59f7-8473-5daa6f699332`) paid 0.05 USDC, **transactionId
+  `ab38c82f-f8ae-5873-921a-7360c7583cb1`** (state INITIATED). Reproduce:
+  `GET /api/dev/agent-pay?token=…` (server-side, Circle API). The Circle-managed Agent Wallet is
+  the real payer for author payouts.
 
 ## Reproduce
 ```
