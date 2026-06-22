@@ -46,6 +46,20 @@ Deployer/operator/agent: `0x31481ADc889B5e00b70846F59967DAF09CBe4a3e`
 - `postBond(provider, ctx, 1.0 USDC)` → `trustVector(operator→provider@ctx)` = **1.000000**
 - capital at risk, keyed by (from→to→context) — slashable via `slash(id, beneficiary)`
 
+## Deepening the Circle stack — solutions to the testnet/API walls
+- **CCTP cross-chain — SOLVED, live.** Instead of Gateway `withdraw` (which needs the Gateway API +
+  destination gas), call **CCTP V2 `depositForBurn` directly on Arc** (pure on-chain, no Gateway API).
+  Real burn tx: **`0xceb08d128510915eed26c6b4f300dbaf8abf85d2b87ebd102ec3fb16c2f05715`** — 0.05 USDC
+  burned on Arc, cross-chain message emitted (TokenMessengerV2 `0x8FE6B999…`, dest domain 6 = Base).
+- **EURC multi-currency — solution wired (`src/lib/eurc.ts`).** StableFX USDC↔EURC has no route on
+  Arc testnet, so pay EU authors by **transferring EURC directly** (EURC `0x89B5…D72a` is native on
+  Arc) — no swap. `payAuthorEurc()` is ready; only needs the operator funded with testnet EURC (Circle
+  faucet → Arc Testnet → EURC).
+- **Agent Wallet as payer — solution.** The Circle Agent Wallet can't be a Gateway `BatchEvmSigner`
+  (it signs via Circle's API, not a raw key), but it CAN pay authors directly via
+  `agent-wallet.ts:transferUSDC` (Circle `createTransaction`). That routes author payouts through the
+  Circle-managed Agent Wallet (server-side), making it the real payer.
+
 ## Reproduce
 ```
 cd contracts
