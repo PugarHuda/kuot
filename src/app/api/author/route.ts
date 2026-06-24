@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createPublicClient, http, parseAbiItem, getAddress, isAddress, type Address } from "viem";
 import { PERMISSION_CHAIN } from "@/lib/chains";
+import { ledgerRanges } from "@/lib/logs";
 
 export const runtime = "nodejs";
 
@@ -30,12 +31,8 @@ export async function GET(req: Request) {
 
   try {
     const latest = await client.getBlockNumber();
-    const STEP = 9_000n;
-    const start = BigInt(process.env.KUOT_LEDGER_FROM_BLOCK ?? "47802000");
-    let from = latest > STEP * 30n ? latest - STEP * 30n : 0n;
-    if (from < start) from = start;
-    const ranges: { lo: bigint; hi: bigint }[] = [];
-    for (let lo = from; lo <= latest; lo += STEP + 1n) ranges.push({ lo, hi: lo + STEP > latest ? latest : lo + STEP });
+    // Anchored at the ledger deploy block, <100k chunks — see src/lib/logs.ts.
+    const ranges = ledgerRanges(latest);
     const [earned, logChunks] = await Promise.all([
       client.readContract({ address: LEDGER, abi: EARNINGS_ABI, functionName: "authorEarnings", args: [address] }),
       Promise.all(ranges.map(({ lo, hi }) => client.getLogs({ address: LEDGER, event: AUTHOR_PAID, args: { author: address }, fromBlock: lo, toBlock: hi }))),

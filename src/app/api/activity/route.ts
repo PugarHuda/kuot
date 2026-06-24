@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createPublicClient, http, parseAbiItem, type Address } from "viem";
 import { PERMISSION_CHAIN } from "@/lib/chains";
+import { ledgerRanges } from "@/lib/logs";
 
 export const runtime = "nodejs";
 
@@ -20,19 +21,9 @@ export async function GET() {
 
   try {
     const latest = await client.getBlockNumber();
-    // Arc produces blocks fast and getLogs is capped to a 10k range, so paginate
-    // from the ledger deploy era up to latest in 9k chunks (capped) to catch all
-    // attestations even when they're far behind the head.
-    const STEP = 9_000n;
-    const MAX_CHUNKS = 30; // ~270k blocks of lookback, ~60 RPC calls max
-    const start = BigInt(process.env.KUOT_LEDGER_FROM_BLOCK ?? "47802000");
-    let from = latest > STEP * BigInt(MAX_CHUNKS) ? latest - STEP * BigInt(MAX_CHUNKS) : 0n;
-    if (from < start) from = start;
-
-    const ranges: { lo: bigint; hi: bigint }[] = [];
-    for (let lo = from; lo <= latest; lo += STEP + 1n) {
-      ranges.push({ lo, hi: lo + STEP > latest ? latest : lo + STEP });
-    }
+    // Paginate from the ledger deploy block to head in <100k chunks (Arc's
+    // getLogs cap). Anchored at deploy so early attestations never age out.
+    const ranges = ledgerRanges(latest);
     const chunks = await Promise.all(
       ranges.map(({ lo, hi }) =>
         Promise.all([
