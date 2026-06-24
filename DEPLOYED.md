@@ -51,10 +51,11 @@ Deployer/operator/agent: `0x31481ADc889B5e00b70846F59967DAF09CBe4a3e`
   destination gas), call **CCTP V2 `depositForBurn` directly on Arc** (pure on-chain, no Gateway API).
   Real burn tx: **`0xceb08d128510915eed26c6b4f300dbaf8abf85d2b87ebd102ec3fb16c2f05715`** — 0.05 USDC
   burned on Arc, cross-chain message emitted (TokenMessengerV2 `0x8FE6B999…`, dest domain 6 = Base).
-- **EURC multi-currency — solution wired (`src/lib/eurc.ts`).** StableFX USDC↔EURC has no route on
-  Arc testnet, so pay EU authors by **transferring EURC directly** (EURC `0x89B5…D72a` is native on
-  Arc) — no swap. `payAuthorEurc()` is ready; only needs the operator funded with testnet EURC (Circle
-  faucet → Arc Testnet → EURC).
+- **EURC multi-currency — SOLVED, live.** StableFX USDC↔EURC has no route on Arc testnet, so pay EU
+  authors by **transferring EURC directly** (EURC `0x89B5…D72a` is native on Arc) — no swap. Proven:
+  operator paid **0.05 EURC** to an author, tx
+  **`0x393469b110b0a0ae47d9cb2f9ce2d50c7cfcd8ff6468001547fbd28d45101062`** (author EURC balance now
+  0.05). `payAuthorEurc()` (`src/lib/eurc.ts`).
 - **Agent Wallet as payer — SOLVED, live.** The Circle Agent Wallet can't be a Gateway
   `BatchEvmSigner` (it signs via Circle's API, not a raw key), but it pays authors directly via
   Circle `createTransaction`. Proven: Agent Wallet **`0x69906004…7cea`** (walletId

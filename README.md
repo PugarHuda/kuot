@@ -60,5 +60,5 @@ Other agents can use — and **pay** — Kuot via the MCP server in `mcp/` (tool
 `kuot_cite`, `kuot_authors`). See `mcp/README.md`.
 
 ## Docs
-`KUOT.md` (architecture + build log) · `DEPLOYED.md` (addresses + proof txs) · `DEMO.md`
+`CIRCLE-STACK.md` (every Circle primitive + live proof) · `KUOT.md` · `DEPLOYED.md` (addresses + proof txs) · `DEMO.md`
 (3-min demo script) · `SUBMISSION.md` · `FEEDBACK.md` (Circle/Arc DX). MIT licensed.
