@@ -31,9 +31,9 @@ Built for the **Lepton Agents Hackathon — Canteen × Circle × Arc** (June 202
   trust as a from→to→context vector, not a single score.
 
 ## Circle / Arc stack
-Gateway nanopayments · x402 · Agent Wallets · App Kit Swap (USDC↔EURC) · USYC · CCTP · Contracts ·
-USDC + EURC. **7 contracts live on Arc testnet** (5042002) — see `DEPLOYED.md` for addresses + the
-on-chain proof transactions.
+Gateway nanopayments · x402 · Agent Wallets · StableFX swap (on-chain USDC↔EURC) · USYC · CCTP ·
+Contracts · USDC + EURC. **10 contracts live on Arc testnet** (5042002) — see `DEPLOYED.md` for
+addresses + the on-chain proof transactions.
 
 ## Architecture
 ```
@@ -52,7 +52,7 @@ npm install
 cp .env.example .env     # fill ARC_RPC_URL, contract addresses, CIRCLE_*/VENICE_API_KEY
 npm run dev              # http://localhost:3000
 ```
-Contracts: `cd contracts && forge test` (80 Vitest + 51 Foundry green). Deploy with
+Contracts: `cd contracts && forge test` (80 Vitest + 59 Foundry green). Deploy with
 `forge script script/Deploy.s.sol` then `script/DeployKuot.s.sol` (see `DEPLOYED.md`).
 
 ## Integrate (MCP)

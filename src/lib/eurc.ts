@@ -11,6 +11,7 @@
 import { createPublicClient, createWalletClient, erc20Abi, http, type Address } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { arcTestnet, EURC, EURC_DECIMALS } from "./chains";
+import { swapUsdcToEurcOnArc } from "./onchain-fx";
 
 function rpc() {
   return process.env.ARC_RPC_URL ?? process.env.NEXT_PUBLIC_ARC_RPC ?? arcTestnet.rpcUrls.default.http[0];
@@ -39,4 +40,28 @@ export async function payAuthorEurc(to: Address, amount: number): Promise<`0x${s
   const wallet = createWalletClient({ account, chain: arcTestnet, transport: http(rpc()) });
   const atomic = BigInt(Math.round(amount * 10 ** EURC_DECIMALS));
   return wallet.writeContract({ address: eurc, abi: erc20Abi, functionName: "transfer", args: [to, atomic] });
+}
+
+/**
+ * Pay an EU author by SWAPPING their USDC share into EURC on-chain (Kuot's Arc
+ * StableFXPool), then transferring the swapped euros. This is the full live path:
+ * a dollar-denominated citation share becomes a euro payout in two real txs — no
+ * pre-held EURC, no Circle StableFX route required. `usdcAmount6` is base units.
+ */
+export async function payAuthorEurcViaSwap(
+  to: Address,
+  usdcAmount6: bigint,
+): Promise<{ swapTx: `0x${string}`; payTx: `0x${string}`; eurcPaid: string }> {
+  const eurc = EURC[arcTestnet.id];
+  if (!eurc) throw new Error("EURC not configured for Arc");
+  const opKey = process.env.OPERATOR_PRIVATE_KEY as `0x${string}` | undefined;
+  if (!opKey) throw new Error("OPERATOR_PRIVATE_KEY not configured");
+
+  const swap = await swapUsdcToEurcOnArc(usdcAmount6);
+  const eurcOut = BigInt(swap.amountOut);
+
+  const account = privateKeyToAccount(opKey);
+  const wallet = createWalletClient({ account, chain: arcTestnet, transport: http(rpc()) });
+  const payTx = await wallet.writeContract({ address: eurc, abi: erc20Abi, functionName: "transfer", args: [to, eurcOut] });
+  return { swapTx: swap.txHash, payTx, eurcPaid: eurcOut.toString() };
 }

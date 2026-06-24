@@ -17,6 +17,7 @@ Deployer/operator/agent: `0x31481ADc889B5e00b70846F59967DAF09CBe4a3e`
 | GroundingRegistry | `0x18FfEEbb779eDF44733C8EFcefeF70fB929636D1` |
 | ReputationBond | `0xEBfe7B62cC6e383551c61d13437157E0Fe46f463` |
 | AgentRegistry8004 (ERC-8004 identity/reputation) | `0x53aaF8397E518f2529e1682b9A03D73537B23f9d` |
+| StableFXPool (on-chain USDC↔EURC swap) | `0x3B95B94BE1F0cAE3CFF64Ebdc82cB9397deDCEff` |
 | MockUSYC (yield vault) | `0xEe59BD14b54F48D769032c0950a773d41E12115d` |
 | CitationYieldUSYC | `0x9E48A2D1501A1DB6A77b7bb325B2C22070be28d8` |
 | ShareRegistry (reverse-x402 store) | `0x25BC0d7eA9B574CF47D7018cfBc5a1627F3227Df` |
@@ -42,6 +43,13 @@ Deployer/operator/agent: `0x31481ADc889B5e00b70846F59967DAF09CBe4a3e`
   `{"success":true,"transaction":"0c53ea2c-…","network":"eip155:5042002"}`.
 - Reproduce: `GET /api/dev/gateway-pay?id=14c966d503a1d1b2` (server-side buyer, returns the
   before/after Gateway balance + settlement). Seller (KUOT_COLLECTOR) must differ from the buyer.
+
+**StableFX swap (USDC↔EURC) — LIVE on-chain** — `StableFXPool` `0x3B95B94BE1F0cAE3CFF64Ebdc82cB9397deDCEff`
+- Circle's App Kit StableFX has no Arc-testnet route, so Kuot runs its own seeded pool (5 USDC + 5 EURC).
+- Live swap: 1 USDC → **0.917240 EURC** (rate 0.92, fee 0.30%), tx
+  `0x01c2e1fefceb7ba9711c0e2042cb85d693ea67e09c3258f4c1f7d597b8930cef`; reserves moved USDC 5→6, EURC 5→4.083.
+- Wired: `quote()`/`swap()` via `src/lib/onchain-fx.ts`; swap-then-pay via `src/lib/eurc.ts#payAuthorEurcViaSwap`;
+  live endpoints `GET /api/fx` (quote) + `GET /api/dev/fx-swap` (execute). 8 Foundry tests (`StableFXPool.t.sol`).
 
 **ERC-8004 agent identity + reputation** — `AgentRegistry8004` `0x53aaF8397E518f2529e1682b9A03D73537B23f9d`
 - Deploy tx `0x65d547b063b21026e6127092615e08679458be26cbd841eb9ab562c70f5cf916`

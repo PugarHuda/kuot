@@ -8,6 +8,11 @@
  *
  * SERVER-ONLY. Requires CIRCLE_API_KEY + CIRCLE_ENTITY_SECRET + KIT_KEY (App Kit).
  * Until those are set, `swapEnabled()` is false and payouts stay in USDC.
+ *
+ * NOTE: Circle's StableFX has no Arc-testnet route yet, so the LIVE swap path runs
+ * through Kuot's own on-chain StableFXPool — see `src/lib/onchain-fx.ts`
+ * (`swapOnArc` / `swapUsdcToEurcOnArc`) and `src/lib/eurc.ts#payAuthorEurcViaSwap`.
+ * This file stays as the Circle-SDK-native adapter for when an Arc route ships.
  */
 import { AppKit, SwapChain } from "@circle-fin/app-kit";
 import { createCircleWalletsAdapter } from "@circle-fin/adapter-circle-wallets";

@@ -79,6 +79,15 @@ export const EURC: Record<number, `0x${string}`> = {
   5042002: (process.env.NEXT_PUBLIC_ARC_EURC as `0x${string}`) ?? "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
 };
 
+/**
+ * StableFXPool — Kuot's on-chain USDC<->EURC swap pool on Arc. Circle's StableFX
+ * (App Kit Swap) has no Arc-testnet route, so multi-currency payouts swap through
+ * this deployed pool (see contracts/src/StableFXPool.sol + src/lib/onchain-fx.ts).
+ */
+export const FX_POOL: Record<number, `0x${string}` | undefined> = {
+  5042002: (process.env.NEXT_PUBLIC_ARC_FX_POOL as `0x${string}`) ?? "0x3B95B94BE1F0cAE3CFF64Ebdc82cB9397deDCEff",
+};
+
 export const USDC_DECIMALS = 6;
 export const EURC_DECIMALS = 6;
 
