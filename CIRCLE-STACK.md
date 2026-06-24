@@ -14,7 +14,7 @@ Every Circle/Arc primitive Kuot uses, with a real on-chain / API proof. All on *
 | **EURC** | Multi-currency author payout — pay EU authors in EURC directly (no swap) | transfer `0x393469b110b0a0ae47d9cb2f9ce2d50c7cfcd8ff6468001547fbd28d45101062` (0.05 EURC) |
 | **USYC** (tokenized treasury) | Unclaimed author rewards earn real ERC-4626 vault yield (`MockUSYC` on testnet → USYC on mainnet) | accrue 1.0 → vault +0.5 → claim 1.5 (Foundry + on-chain) |
 | **Contracts on Arc** | 8 Solidity contracts (Foundry): ledger, grounding, reputation bond, USYC vault, share, escrow, registry, bounty | see address table below |
-| **ERC-8004** (agent identity/reputation) | AgentRegistry8004 + ReputationBond (directional, slashable) | bond post→slash proven (Foundry + on-chain) |
+| **ERC-8004** (agent identity/reputation) | AgentRegistry8004 (`0x53aaF839…`, 5 agents registered) + ReputationBond (directional, slashable) | reputation bump `0xe635fd27…` (researcher → rep 1); bond post→slash proven (Foundry + on-chain) |
 | **proof-of-grounding** (Kuot novel) | keccak256 answer digest committed on-chain; only grounded authors paid | commit tx `0xad77a890…463c01ed` |
 | **reverse-x402 recursive** (Kuot novel) | Cite Kuot → fraction flows back to original authors, depth after depth | recursive split @ `$0.000013`/author |
 

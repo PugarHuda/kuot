@@ -16,6 +16,7 @@ Deployer/operator/agent: `0x31481ADc889B5e00b70846F59967DAF09CBe4a3e`
 | UnclaimedEscrow | `0xf7E7c1619F9C5F3cDcCd1B209fdE0AedA4025812` |
 | GroundingRegistry | `0x18FfEEbb779eDF44733C8EFcefeF70fB929636D1` |
 | ReputationBond | `0xEBfe7B62cC6e383551c61d13437157E0Fe46f463` |
+| AgentRegistry8004 (ERC-8004 identity/reputation) | `0x53aaF8397E518f2529e1682b9A03D73537B23f9d` |
 | MockUSYC (yield vault) | `0xEe59BD14b54F48D769032c0950a773d41E12115d` |
 | CitationYieldUSYC | `0x9E48A2D1501A1DB6A77b7bb325B2C22070be28d8` |
 | ShareRegistry (reverse-x402 store) | `0x25BC0d7eA9B574CF47D7018cfBc5a1627F3227Df` |
@@ -41,6 +42,12 @@ Deployer/operator/agent: `0x31481ADc889B5e00b70846F59967DAF09CBe4a3e`
   `{"success":true,"transaction":"0c53ea2c-…","network":"eip155:5042002"}`.
 - Reproduce: `GET /api/dev/gateway-pay?id=14c966d503a1d1b2` (server-side buyer, returns the
   before/after Gateway balance + settlement). Seller (KUOT_COLLECTOR) must differ from the buyer.
+
+**ERC-8004 agent identity + reputation** — `AgentRegistry8004` `0x53aaF8397E518f2529e1682b9A03D73537B23f9d`
+- Deploy tx `0x65d547b063b21026e6127092615e08679458be26cbd841eb9ab562c70f5cf916`
+- 5 mesh agents registered on-chain by the operator (researcher/planner/reader/factchecker/summarizer) — `agentCount() = 5`
+- Reputation is *earned*: `bumpReputation` tx `0xe635fd27cb786125ec19c40d80d59363d56036eddd390f8ff00069ec85b2d75c` → `getAgent(researcher).reputation = 1`
+- Wired into the live app: `/api/agents/feedback` bumps contributors after each settled run (`src/lib/reputation.ts`)
 
 **Directional reputation bond** — `ReputationBond`
 - `postBond(provider, ctx, 1.0 USDC)` → `trustVector(operator→provider@ctx)` = **1.000000**
