@@ -19,8 +19,17 @@ Every Circle/Arc primitive Kuot uses, with a real on-chain / API proof. All on *
 | **reverse-x402 recursive** (Kuot novel) | Cite Kuot → fraction flows back to original authors, depth after depth | recursive split @ `$0.000013`/author |
 
 ## On-chain settlements (AttributionLedger)
-3 settled research queries → **19 author payouts** in real USDC (see `/dashboard/activity`). Example
-settle tx `0xd4f7988cc5ce80bcfa165eac7dcc9a6ac55f571ac0cebfe648b9df5418a7e36e`.
+4 settled research queries → **27 author payouts** in real USDC (live read at `/dashboard/activity`).
+- Example settle tx `0xd4f7988cc5ce80bcfa165eac7dcc9a6ac55f571ac0cebfe648b9df5418a7e36e`.
+- **Full pipeline proven live end-to-end** (Venice `live` mode → grounding → x402 paper-buy → settle):
+  research query "direct air carbon capture" → synthesis + 10 web citations + 8 weighted author
+  shares; x402 paper payment tx `0x4e4c7b35eeabb0b4363f72b03b9ec1611d986f70144e04477a4ac66dda02f014`;
+  `attestAndSplit` tx `0x30823b517ad509cb7f69afaa5b9aca76f44ecd537d64fc30745e9e1ec7e5db9a`
+  (1 QueryAttested + 8 AuthorPaid, success); grounding-commit tx
+  `0xd323872c6cc0ee497e2d658ff23dca2c4a1992892c5d0d3476256aebb8bf24e7`.
+- Activity/author readers paginate `getLogs` from the ledger deploy block in <100k chunks
+  (`src/lib/logs.ts`) — Arc caps ranges at 100k and moves fast, so a head-relative lookback would
+  drop early attestations; anchoring at deploy keeps every payout visible.
 
 ## The one Circle primitive NOT live — and why
 **App Kit Swap (StableFX USDC↔EURC)**: no swap route exists on Arc testnet yet (Circle-side; returns
