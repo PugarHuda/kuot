@@ -93,10 +93,19 @@ export async function POST(req: Request) {
 
   const paymentHeader = req.headers.get("Payment-Signature") ?? req.headers.get("X-PAYMENT") ?? undefined;
 
-  // Demo click-through (no on-chain settle) so judges can see the gated flow.
+  // Demo click-through. Running the full (expensive) Venice pipeline for free is
+  // only allowed when explicitly enabled (KUOT_ENABLE_DEMO=1) — otherwise this
+  // PAID endpoint stays paid: we surface the toll instead of burning compute.
+  // (The free public tier for output is /api/research.)
   if (paymentHeader === "demo") {
-    const result = await runResearch(query, { papers, rootBudgetUSDC: body.rootBudgetUSDC, webSources: body.webSources });
-    return NextResponse.json({ paid: "demo", price, result });
+    if (process.env.KUOT_ENABLE_DEMO === "1") {
+      const result = await runResearch(query, { papers, rootBudgetUSDC: body.rootBudgetUSDC, webSources: body.webSources });
+      return NextResponse.json({ paid: "demo", price, result });
+    }
+    return NextResponse.json(
+      { paid: false, price, note: "Pay the x402 toll to run. Free output is available at /api/research." },
+      { status: 402 },
+    );
   }
 
   const pw = await runGatewayPaywall(price.dollars, paymentHeader);

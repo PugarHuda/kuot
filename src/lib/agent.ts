@@ -176,8 +176,10 @@ export async function runResearch(query: string, opts: ResearchOptions = {}): Pr
   let x402: ResearchResult["x402"] = { paid: false, rail: "none", reason: "agent has no test USDC yet" };
   const payTo = process.env.NEXT_PUBLIC_SESSION_ACCOUNT as `0x${string}` | undefined;
   const topPaperId = works[0]?.id ?? "top";
-  if (payTo) {
+  if (payTo && paperBid6 > 0n) {
     x402 = await payForPaper(topPaperId, getAddress(payTo), paperBid6);
+  } else if (paperBid6 <= 0n) {
+    x402 = { paid: false, rail: "none", reason: "source budget exhausted (bid ≤ 0)" };
   }
 
   // Multi-agent orchestration: Researcher redelegates to a Reader fan-out (one

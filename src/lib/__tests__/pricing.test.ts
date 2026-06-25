@@ -50,6 +50,10 @@ describe("dynamic paper bid", () => {
     expect(bid).toBeLessThanOrEqual(200n);
   });
 
+  it("bids 0 when the budget is 0 (caller must skip the purchase, never pay 0)", () => {
+    expect(dynamicPaperBid({ rank: 0, relevance: 1, remainingBudget6: 0n })).toBe(0n);
+  });
+
   it("a strong relevance match bids above a weak one", () => {
     const strong = dynamicPaperBid({ rank: 0, relevance: 1, remainingBudget6: 1_000_000n });
     const weak = dynamicPaperBid({ rank: 0, relevance: 0, remainingBudget6: 1_000_000n });

@@ -34,6 +34,9 @@ function gatewayEnabled(): boolean {
  * @param price6  price in USDC atomic units (6 decimals)
  */
 export async function payForPaper(id: string, payTo: Address, price6: bigint): Promise<PaperPayment> {
+  // A non-positive bid means the source budget is exhausted — never submit a
+  // 0-value transfer (wasted gas) and never report it as "paid".
+  if (price6 <= 0n) return { paid: false, rail: "none", reason: "source budget exhausted (bid ≤ 0)" };
   // Preferred: Gateway nanopayment against the x402-protected paper endpoint.
   if (gatewayEnabled()) {
     try {

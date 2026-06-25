@@ -28,7 +28,7 @@ export async function GET() {
 
   let attestations = 0;
   let authorPayouts = 0;
-  let attributedUSDC = 0;
+  let attributedAtomic = 0n;
   const uniqueAuthors = new Set<string>();
   try {
     if (LEDGER) {
@@ -42,16 +42,24 @@ export async function GET() {
           ]),
         ),
       );
-      const attested = chunks.flatMap((c) => c[0]);
-      const paid = chunks.flatMap((c) => c[1]);
+      // Dedup by (txHash, logIndex) in case a chunk boundary / reorg replays a log.
+      const dedup = <T extends { transactionHash: `0x${string}` | null; logIndex: number }>(logs: T[]) => {
+        const m = new Map<string, T>();
+        for (const l of logs) m.set(`${l.transactionHash}:${l.logIndex}`, l);
+        return [...m.values()];
+      };
+      const attested = dedup(chunks.flatMap((c) => c[0]));
+      const paid = dedup(chunks.flatMap((c) => c[1]));
       attestations = attested.length;
       authorPayouts = paid.length;
-      for (const l of attested) attributedUSDC += Number(l.args.total as bigint) / 1e6;
+      // Sum in bigint (no float drift / precision loss), divide once at the end.
+      for (const l of attested) attributedAtomic += l.args.total as bigint;
       for (const l of paid) uniqueAuthors.add(String(l.args.author).toLowerCase());
     }
   } catch {
     /* network — return what we have */
   }
+  const attributedUSDC = Number(attributedAtomic) / 1e6;
 
   let authorsOnboarded = 0;
   try {

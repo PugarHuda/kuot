@@ -186,33 +186,40 @@ export async function searchRSSHub(query: string, count = 3): Promise<Work[]> {
     if (!res.ok) return [];
     const xml = await res.text();
     const items = xml.split(/<item>/i).slice(1).map((s) => s.split(/<\/item>/i)[0]);
-    const works: Work[] = [];
-    for (let i = 0; i < items.length && works.length < count; i++) {
-      const block = items[i];
+    // Parse first (no network), dedup, then resolve all publisher wallets in ONE
+    // on-chain call (mirrors searchCorpus) — avoids an N+1 round-trip per article.
+    type Parsed = { id: string; title: string; link: string; abstract: string; publisher: string; identity: string };
+    const parsed: Parsed[] = [];
+    const seen = new Set<string>();
+    for (const block of items) {
+      if (parsed.length >= count) break;
       const link = tag(block, "link");
-      let title = tag(block, "title");
+      const title = tag(block, "title");
       if (!title || !link) continue;
-      // Google News titles are "Headline - Publisher"; the <source> tag names the publisher.
-      let publisher = tag(block, "source");
-      if (!publisher && / - [^-]+$/.test(title)) {
-        const parts = title.split(" - ");
-        publisher = parts[parts.length - 1].trim();
-        title = parts.slice(0, -1).join(" - ").trim();
-      }
-      publisher = publisher || "Publisher";
+      // The publisher comes ONLY from the <source> tag (Google News emits it).
+      // We deliberately do NOT parse it out of "Headline - Publisher" titles —
+      // a headline that merely contains " - " would mis-set the payee.
+      const publisher = tag(block, "source") || "Publisher";
       const identity = publisherIdentity(publisher);
-      const r = (await resolveAuthorWallets([identity])).get(identity) ?? { wallet: demoWallet(identity), claimed: false };
-      works.push({
-        id: `rsshub:${link}`,
-        title,
-        url: link,
-        abstract: (tag(block, "description") || title).slice(0, 1200),
+      const id = `rsshub:${link}`.slice(0, 256); // cap id length (flows into grounding)
+      if (seen.has(id)) continue;
+      seen.add(id);
+      parsed.push({ id, title, link, abstract: (tag(block, "description") || title).slice(0, 1200), publisher, identity });
+    }
+    if (!parsed.length) return [];
+    const wallets = await resolveAuthorWallets(parsed.map((p) => p.identity));
+    return parsed.map((p, i): Work => {
+      const r = wallets.get(p.identity) ?? { wallet: demoWallet(p.identity), claimed: false };
+      return {
+        id: p.id,
+        title: p.title,
+        url: p.link,
+        abstract: p.abstract,
         rank: i,
         source: "rsshub",
-        authors: [{ id: identity, name: publisher, orcid: undefined, wallet: r.wallet, claimed: r.claimed }],
-      });
-    }
-    return works;
+        authors: [{ id: p.identity, name: p.publisher, orcid: undefined, wallet: r.wallet, claimed: r.claimed }],
+      };
+    });
   } catch {
     return []; // network/timeout/parse — academic corpus carries the run
   }
