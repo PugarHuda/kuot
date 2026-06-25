@@ -29,6 +29,15 @@ Built for the **Lepton Agents Hackathon — Canteen × Circle × Arc** (June 202
 - **USYC-backed yield** — unclaimed rewards earn real tokenized-treasury yield (ERC-4626 vault).
 - **Directional reputation-as-collateral** — USDC bond, slashable on a false citation (ERC-8004) —
   trust as a from→to→context vector, not a single score.
+- **Agent-payable toll-booth** — external agents pay Kuot to research via `POST /api/research/x402`
+  (Gateway x402, $0.001/paper) and via the `kuot_research_paid` MCP tool; one payment fans out to authors.
+- **The agent quotes its own work** — a Kuot answer self-prices its citation fee and its recursive
+  author-share by the fact-checker's confidence × grounding depth, and **bids** per source (rank/budget),
+  instead of one flat price (`src/lib/pricing.ts`).
+- **Real publisher sources** — `webSources` augments the academic corpus with live articles (Google
+  News RSS / self-hosted RSSHub); a citation-toll settles to the publisher (Prior Art #01).
+- **Author onboarding** — `GET /api/stats` (on-chain `authorsOnboarded` + attributed) and a shareable
+  referral claim link (`/dashboard/claim?orcid=…`) turn citations into real, claimable earnings.
 
 ## Circle / Arc stack
 Gateway nanopayments · x402 · Agent Wallets · StableFX swap (on-chain USDC↔EURC) · USYC · CCTP ·
