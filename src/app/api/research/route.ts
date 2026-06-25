@@ -13,6 +13,16 @@ export const maxDuration = 120;
  * citation payout plan the agent will settle via attestAndSplit.
  */
 export async function POST(req: Request) {
+  // Throttle per-IP up front — the free tier runs real Venice inference, so cap
+  // abuse before doing any work. (8/min; the paid /api/research/x402 is uncapped.)
+  const rl = rateLimit(`research:${clientIp(req)}`, 8, 60_000);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "rate limit — too many free research runs; retry shortly or use the paid /api/research/x402" },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfter) } },
+    );
+  }
+
   let body: {
     query?: string;
     papers?: number;
@@ -31,16 +41,6 @@ export async function POST(req: Request) {
 
   const query = body.query?.trim();
   if (!query) return NextResponse.json({ error: "query is required" }, { status: 400 });
-
-  // The free tier runs real Venice inference — throttle per-IP so it can't be
-  // scripted to burn credits. (8 runs/min; the paid /api/research/x402 is uncapped.)
-  const rl = rateLimit(`research:${clientIp(req)}`, 8, 60_000);
-  if (!rl.ok) {
-    return NextResponse.json(
-      { error: "rate limit — too many free research runs; retry shortly or use the paid /api/research/x402" },
-      { status: 429, headers: { "Retry-After": String(rl.retryAfter) } },
-    );
-  }
 
   try {
     const result = await runResearch(query, {
