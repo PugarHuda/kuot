@@ -110,10 +110,11 @@ export async function POST(req: Request) {
 
   const pw = await runGatewayPaywall(price.dollars, paymentHeader);
   if (!pw.paid) {
-    // Unpaid → return the facilitator's 402 verbatim (the GatewayClient understands it).
+    // Unpaid → return the facilitator's 402 verbatim (the GatewayClient understands it),
+    // plus a human-readable price header so non-SDK callers can see the toll.
     return new NextResponse(pw.body || JSON.stringify({ error: "payment required", price }), {
       status: pw.statusCode || 402,
-      headers: pw.headers,
+      headers: { ...pw.headers, "X-Kuot-Price": price.dollars, "X-Kuot-Price-USDC6": String(price.usdc6) },
     });
   }
 

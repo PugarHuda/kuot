@@ -61,12 +61,22 @@ npm install
 cp .env.example .env     # fill ARC_RPC_URL, contract addresses, CIRCLE_*/VENICE_API_KEY
 npm run dev              # http://localhost:3000
 ```
-Contracts: `cd contracts && forge test` (80 Vitest + 59 Foundry green). Deploy with
+Contracts: `cd contracts && forge test` (96 Vitest + 59 Foundry green). Deploy with
 `forge script script/Deploy.s.sol` then `script/DeployKuot.s.sol` (see `DEPLOYED.md`).
 
+## Reproduce the traction
+Drive real agent-to-agent payment volume yourself — an external agent probes the x402
+toll-booth and pays to cite Kuot, settling Gateway-batched nanopayments on Arc:
+```bash
+DEV_PAY_TOKEN=… KUOT_BASE_URL=https://kuot-azure.vercel.app npm run traction -- 5
+```
+Each iteration is a real on-chain settlement (printed with its tx id); a fraction flows
+recursively back to the cited authors. Live totals: `GET /api/stats` and `/dashboard`.
+
 ## Integrate (MCP)
-Other agents can use — and **pay** — Kuot via the MCP server in `mcp/` (tools `kuot_research`,
-`kuot_cite`, `kuot_authors`). See `mcp/README.md`.
+Other agents can use — and **pay** — Kuot via the MCP server in `mcp/` (`npm run mcp`):
+tools `kuot_research`, **`kuot_research_paid`** (x402 toll-booth), `kuot_cite` (reverse-x402),
+`kuot_authors`. See `mcp/README.md`.
 
 ## Docs
 `CIRCLE-STACK.md` (every Circle primitive + live proof) · `KUOT.md` · `DEPLOYED.md` (addresses + proof txs) · `DEMO.md`

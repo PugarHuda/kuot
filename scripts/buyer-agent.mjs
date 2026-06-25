@@ -27,7 +27,7 @@ async function jget(path, init) {
   const text = await res.text();
   let body;
   try { body = JSON.parse(text); } catch { body = text; }
-  return { status: res.status, body };
+  return { status: res.status, body, headers: res.headers };
 }
 
 function fmt(atomicStr) {
@@ -44,7 +44,8 @@ async function main() {
     body: JSON.stringify({ query: "what is direct air capture", papers: 3 }),
   });
   if (probe.status === 402) {
-    console.log(`[buyer-agent] toll-booth 402 → price ${probe.body?.price?.dollars ?? "?"} to run research`);
+    const price = probe.headers?.get?.("x-kuot-price") ?? probe.body?.price?.dollars ?? "?";
+    console.log(`[buyer-agent] toll-booth 402 → price ${price} to run research`);
   } else {
     console.log(`[buyer-agent] toll-booth returned HTTP ${probe.status}`);
   }

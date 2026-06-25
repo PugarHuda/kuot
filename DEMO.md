@@ -38,9 +38,12 @@ Record at 1080p, captions on. Keep each beat tight — aim ~20s each.
 - (Optional) show `ReputationBond.trustVector` — capital staked behind a route, slashable.
 
 ## 2:30–3:00 — Traction & close
-- Dashboard: total autonomous payments, avg tx size (sub-cent), authors paid, payment-chain depth.
-- VO: "Seven contracts live on Arc, real USDC flowing, an MCP other agents can pay today.
-  This is the beginning — we keep building past June 29." End on repo + live URL.
+- Run it live: `npm run traction -- 5` — an external **buyer agent** pays the x402 toll-booth +
+  cites Kuot 5×; each line is a real Gateway-batched settlement on Arc (tx ids printed).
+- Cut to `/dashboard` + `GET /api/stats`: attestations, author payouts, USDC attributed, **authors
+  onboarded** tick up live.
+- VO: "Ten contracts live on Arc, real agent-to-agent USDC flowing, an MCP other agents can pay
+  today. This is the beginning — we keep building past the event." End on repo + live URL.
 
 ## Shot list / assets
 - Browser: `/dashboard/research`, `/dashboard/activity`, `/dashboard/agents`.
