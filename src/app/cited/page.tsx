@@ -20,10 +20,17 @@ export default function Cited() {
 
   useEffect(() => {
     fetch("/api/stats").then((r) => r.json()).then(setStats).catch(() => setStats(null));
+    // Outreach links carry ?orcid= so an author lands straight on their own result.
+    const o = new URLSearchParams(window.location.search).get("orcid");
+    if (o && ORCID_RE.test(o.trim())) {
+      setOrcid(o.trim());
+      checkFor(o.trim());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function check() {
-    const id = orcid.trim();
+  async function checkFor(raw: string) {
+    const id = raw.trim();
     if (!ORCID_RE.test(id)) {
       setState("bad");
       return;
@@ -38,6 +45,7 @@ export default function Cited() {
       setState("done");
     }
   }
+  const check = () => checkFor(orcid);
 
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-16">
