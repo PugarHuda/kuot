@@ -136,7 +136,10 @@ export function sanitizeQuery(query: string): string {
 
 // ---- Real publisher sources via RSSHub (Prior Art #01: content that earns when cited) ----
 
-const RSSHUB_BASE = (process.env.KUOT_RSSHUB_BASE ?? "https://rsshub.app").replace(/\/$/, "");
+// Optional self-hosted RSSHub instance. If unset we hit Google News' own RSS
+// directly — the real upstream that RSSHub's /google/news route wraps, and far
+// more reliable than the rate-limited public rsshub.app demo (which 403s in prod).
+const RSSHUB_BASE = process.env.KUOT_RSSHUB_BASE?.replace(/\/$/, "");
 
 /** Strip HTML tags + decode the few entities we care about, for a clean abstract. */
 function stripHtml(s: string): string {
@@ -169,9 +172,17 @@ function publisherIdentity(name: string): string {
 export async function searchRSSHub(query: string, count = 3): Promise<Work[]> {
   if (count <= 0) return [];
   const kw = encodeURIComponent(sanitizeQuery(query).slice(0, 80));
-  const url = `${RSSHUB_BASE}/google/news/${kw}/en`;
+  const url = RSSHUB_BASE
+    ? `${RSSHUB_BASE}/google/news/${kw}/en`
+    : `https://news.google.com/rss/search?q=${kw}&hl=en-US&gl=US&ceid=US:en`;
   try {
-    const res = await fetch(url, { headers: { accept: "application/rss+xml, application/xml, text/xml" }, signal: AbortSignal.timeout(8000) });
+    const res = await fetch(url, {
+      headers: {
+        accept: "application/rss+xml, application/xml, text/xml",
+        "user-agent": "Mozilla/5.0 (compatible; KuotResearchAgent/1.0; +https://kuot-azure.vercel.app)",
+      },
+      signal: AbortSignal.timeout(10000),
+    });
     if (!res.ok) return [];
     const xml = await res.text();
     const items = xml.split(/<item>/i).slice(1).map((s) => s.split(/<\/item>/i)[0]);
