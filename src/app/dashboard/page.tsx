@@ -4,26 +4,31 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 type Data = {
-  totals?: { attestations: number; authorsPaid: number };
-  leaderboard?: { author: string; earned: string }[];
   events?: { queryId: string; total: string; citationCount: number; txHash: string }[];
+};
+type Stats = {
+  authorsOnboarded: number;
+  attestations: number;
+  authorPayouts: number;
+  citedAuthors: number;
+  attributedUSDC: number;
 };
 
 export default function Overview() {
   const [d, setD] = useState<Data | null>(null);
+  const [s, setS] = useState<Stats | null>(null);
 
   useEffect(() => {
+    // Events list from activity; authoritative on-chain totals from /api/stats.
     fetch("/api/activity").then((r) => r.json()).then(setD).catch(() => setD({}));
+    fetch("/api/stats").then((r) => r.json()).then(setS).catch(() => setS(null));
   }, []);
 
-  const totalPaid =
-    d?.leaderboard?.reduce((s, a) => s + Number(a.earned), 0) ?? 0;
-
   const stats = [
-    { k: "Attestations", v: d?.totals?.attestations ?? "—" },
-    { k: "Author payouts", v: d?.totals?.authorsPaid ?? "—" },
-    { k: "USDC attributed", v: d ? `${(totalPaid / 1e6).toFixed(2)}` : "—" },
-    { k: "Cited authors", v: d?.leaderboard?.length ?? "—" },
+    { k: "Attestations", v: s?.attestations ?? "—" },
+    { k: "Author payouts", v: s?.authorPayouts ?? "—" },
+    { k: "USDC attributed", v: s ? s.attributedUSDC.toFixed(2) : "—" },
+    { k: "Authors onboarded", v: s?.authorsOnboarded ?? "—" },
   ];
 
   return (
