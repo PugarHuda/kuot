@@ -78,6 +78,12 @@ Other agents can use — and **pay** — Kuot via the MCP server in `mcp/` (`npm
 tools `kuot_research`, **`kuot_research_paid`** (x402 toll-booth), `kuot_cite` (reverse-x402),
 `kuot_authors`. See `mcp/README.md`.
 
+## For authors & communities
+- **Authors:** [kuot-azure.vercel.app/cited](https://kuot-azure.vercel.app/cited) — a problem-first
+  page (no crypto jargon): enter your ORCID, see what your citations have earned, claim in 2 minutes.
+- **Publishers / communities:** `INTEGRATE.md` — add citation payments to your feed/catalog three ways
+  (point agents at your sources · a claim link for contributors · a paid x402 endpoint).
+
 ## Docs
 `CIRCLE-STACK.md` (every Circle primitive + live proof) · `KUOT.md` · `DEPLOYED.md` (addresses + proof txs) · `DEMO.md`
-(3-min demo script) · `SUBMISSION.md` · `FEEDBACK.md` (Circle/Arc DX). MIT licensed.
+(3-min demo script) · `INTEGRATE.md` (adopt it for your community) · `SUBMISSION.md` · `FEEDBACK.md` (Circle/Arc DX). MIT licensed.

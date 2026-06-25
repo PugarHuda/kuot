@@ -49,10 +49,10 @@ export default function Home() {
               Open the dashboard <span className="inline-block transition-transform group-hover:translate-x-0.5">→</span>
             </Link>
             <Link
-              href="/dashboard/claim"
+              href="/cited"
               className="rounded-md border border-[var(--rule)] px-6 py-3 text-sm font-medium transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
-              Claim your payouts (authors)
+              Are you cited? Get paid →
             </Link>
           </div>
           <div className="mt-5 flex items-center justify-center gap-2 text-[11px] text-[var(--muted)] lg:justify-start">
