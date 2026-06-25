@@ -46,6 +46,31 @@ type Body = {
   digest?: `0x${string}`;
 };
 
+// Per-call ceiling so a single settle can never move more than a sane amount of
+// operator USDC (legit settles are sub-cent up to the ~$2 max grant).
+const MAX_SETTLE_USDC6 = 5_000_000n; // $5
+
+/** Money-MOVING settle paths (split, escrow funding) require the operator token. */
+function settleAuthorized(req: Request): boolean {
+  const token = process.env.DEV_PAY_TOKEN;
+  if (!token) return false; // fail-safe: unset → no operator-funded payouts at all
+  const provided = req.headers.get("x-settle-token") ?? new URL(req.url).searchParams.get("token");
+  return provided === token;
+}
+
+/** Cheap sanity on the payout plan (the ledger also enforces the weight sum on-chain). */
+function payoutsValid(payouts: CitationPayout[]): boolean {
+  if (!payouts.length || payouts.length > 64) return false;
+  let sum = 0;
+  for (const p of payouts) {
+    if (typeof p.author !== "string" || !/^0x[0-9a-fA-F]{40}$/.test(p.author)) return false;
+    if (/^0x0{40}$/.test(p.author)) return false;
+    if (!Number.isInteger(p.weightBps) || p.weightBps < 0 || p.weightBps > 10_000) return false;
+    sum += p.weightBps;
+  }
+  return sum === 10_000;
+}
+
 export async function POST(req: Request) {
   let body: Body;
   try {
@@ -56,13 +81,36 @@ export async function POST(req: Request) {
   if (!body.query || !body.ledger || !Array.isArray(body.payouts) || !body.payouts.length) {
     return NextResponse.json({ error: "query, ledger, payouts required" }, { status: 400 });
   }
+  if (!/^0x[0-9a-fA-F]{40}$/.test(body.ledger)) {
+    return NextResponse.json({ error: "invalid ledger address" }, { status: 400 });
+  }
+  if (!payoutsValid(body.payouts)) {
+    return NextResponse.json({ error: "invalid payouts (valid addresses, weightBps integers summing to 10000, ≤64 entries)" }, { status: 400 });
+  }
 
-  const total = BigInt(body.amountUSDC6 ?? "0");
+  let total: bigint;
+  try {
+    total = BigInt(body.amountUSDC6 ?? "0");
+  } catch {
+    return NextResponse.json({ error: "amountUSDC6 must be an integer string (atomic USDC)" }, { status: 400 });
+  }
+  if (total < 0n || total > MAX_SETTLE_USDC6) {
+    return NextResponse.json({ error: `amountUSDC6 out of range (0..${MAX_SETTLE_USDC6} atomic = $5 cap)` }, { status: 400 });
+  }
+
+  // Paths that move operator USDC (split, escrow funding) require the operator token.
+  const authorized = settleAuthorized(req);
   const queryId = queryIdOf(body.query);
 
   // Prefunded split (Kutip-style upfront): the operator already holds the locked
   // USDC and splits it to authors in one tx (records attestation + transfers).
   if (body.mode === "split") {
+    if (!authorized) {
+      return NextResponse.json(
+        { error: "forbidden — split moves operator USDC; provide the operator settle token (x-settle-token / ?token=)" },
+        { status: 403 },
+      );
+    }
     try {
       const txHash = await operatorAttestAndSplit({ ledger: body.ledger, query: body.query, amount: total, payouts: body.payouts });
       const groundingTx = await commitProof(body.query, body.payouts, body.digest);
@@ -91,13 +139,17 @@ export async function POST(req: Request) {
     // Commit the proof-of-grounding (digest + grounded authors) on-chain. Best-effort.
     const groundingTx = await commitProof(body.query, body.payouts, body.digest);
 
-    // Escrow the shares of authors who haven't claimed a wallet yet (held
-    // on-chain by identity; withdrawable after they bind their ORCID). Best-effort.
+    // Escrow the shares of authors who haven't claimed a wallet yet (held on-chain
+    // by identity; withdrawable after they bind their ORCID). This MOVES operator
+    // USDC, so it only runs for an authorized caller — the public path records the
+    // attestation (gas-only) without moving funds.
     let escrow: { fundTx: string; recordTx: string; total: string } | null = null;
-    try {
-      escrow = await escrowUnclaimed({ payouts: body.payouts, totalUSDC6: total });
-    } catch {
-      escrow = null;
+    if (authorized) {
+      try {
+        escrow = await escrowUnclaimed({ payouts: body.payouts, totalUSDC6: total });
+      } catch {
+        escrow = null;
+      }
     }
 
     return NextResponse.json({
