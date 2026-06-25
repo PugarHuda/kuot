@@ -16,6 +16,7 @@ export async function GET(req: Request) {
   const to = from === "USDC" ? "EURC" : "USDC";
   const amount = Number(url.searchParams.get("amount") ?? "1");
   const amountIn = BigInt(Math.max(0, Math.round(amount * 1e6)));
+  if (amountIn <= 0n) return NextResponse.json({ enabled: true, error: "amount must be > 0" }, { status: 400 });
   try {
     const [quoted, reserves] = await Promise.all([quoteOnArc(from, amountIn), poolReserves()]);
     return NextResponse.json({

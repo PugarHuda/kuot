@@ -18,6 +18,7 @@ export async function GET(req: Request) {
   const from = (url.searchParams.get("from") === "EURC" ? "EURC" : "USDC") as FxToken;
   const amount = Number(url.searchParams.get("amount") ?? "0.1");
   const amountIn = BigInt(Math.max(0, Math.round(amount * 1e6)));
+  if (amountIn <= 0n) return NextResponse.json({ ok: false, error: "amount must be > 0" }, { status: 400 });
 
   try {
     const before = await poolReserves();
