@@ -6,8 +6,9 @@
  * settles. Venice does the reasoning (private, uncensored); the payout is what
  * makes every citation an on-chain payment to its author.
  */
-import { searchCorpus, refineQueryForSearch, type Work } from "./corpus";
+import { searchCorpus, searchRSSHub, refineQueryForSearch, type Work } from "./corpus";
 import { payForPaper } from "./pay";
+import { dynamicPaperBid } from "./pricing";
 import { proveGrounding } from "./grounding";
 import { orchestrate, type AgentStep, type Confidence } from "./orchestrator";
 import { getAddress } from "viem";
@@ -115,6 +116,9 @@ export type ResearchOptions = {
   rootExpiryUnix?: number;
   /** OpenAlex work ids already cited in past runs — skipped so each run finds fresh papers. */
   excludeIds?: string[];
+  /** Augment the academic corpus with N REAL publisher articles via RSSHub (0 = off).
+   *  Each becomes a citable source whose toll settles to the publisher (Prior Art #01). */
+  webSources?: number;
 };
 
 /** Run a full research query and return synthesis + payout plan. */
@@ -140,6 +144,14 @@ export async function runResearch(query: string, opts: ResearchOptions = {}): Pr
     works = await searchCorpus(query, searchOpts);
   }
 
+  // Augment with REAL publisher articles (RSSHub) when asked — a live citation-toll
+  // to the actual source (Prior Art #01). Pure augmentation: degrades to [] safely.
+  const webN = Math.min(5, Math.max(0, Math.floor(opts.webSources ?? 0)));
+  if (webN > 0) {
+    const web = await searchRSSHub(searchTerms, webN);
+    if (web.length) works = [...works, ...web.map((w, i) => ({ ...w, rank: works.length + i }))];
+  }
+
   // No corpus hits → return cleanly with no payouts (UI disables settle/redeem).
   if (works.length === 0) {
     return {
@@ -157,12 +169,15 @@ export async function runResearch(query: string, opts: ResearchOptions = {}): Pr
   // x402: pay a real USDC nanopayment to unlock the top paper's full text.
   // Prefers the Circle Gateway batched rail on Arc; falls back to a direct,
   // on-chain-verifiable transfer. Degrades honestly when the agent is unfunded.
-  const PAPER_PRICE_6 = 1_000n; // $0.001 — a real sub-cent nanopayment (the lepton)
+  // The agent BIDS for the source rather than paying one flat price: a top-ranked
+  // paper earns a higher bid than a marginal one, never exceeding the source budget.
+  const sourceBudget6 = BigInt(Math.round(Math.max(0, opts.rootBudgetUSDC ?? 0.1) * 1e6));
+  const paperBid6 = dynamicPaperBid({ rank: works[0]?.rank ?? 0, remainingBudget6: sourceBudget6 });
   let x402: ResearchResult["x402"] = { paid: false, rail: "none", reason: "agent has no test USDC yet" };
   const payTo = process.env.NEXT_PUBLIC_SESSION_ACCOUNT as `0x${string}` | undefined;
   const topPaperId = works[0]?.id ?? "top";
   if (payTo) {
-    x402 = await payForPaper(topPaperId, getAddress(payTo), PAPER_PRICE_6);
+    x402 = await payForPaper(topPaperId, getAddress(payTo), paperBid6);
   }
 
   // Multi-agent orchestration: Researcher redelegates to a Reader fan-out (one

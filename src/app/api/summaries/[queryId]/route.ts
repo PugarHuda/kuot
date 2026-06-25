@@ -3,12 +3,10 @@ import { createGatewayMiddleware } from "@circle-fin/x402-batching/server";
 import { getShared } from "@/lib/store";
 import { proveGrounding } from "@/lib/grounding";
 import { recursiveSplit } from "@/lib/recursive";
+import { selfPriceForSynthesis, type SelfPrice } from "@/lib/pricing";
 import type { ResearchResult } from "@/lib/agent";
 
 export const runtime = "nodejs";
-
-const PRICE_DOLLARS = "$0.0001"; // a sub-cent nanopayment to cite Kuot
-const PRICE_USDC_6 = "100"; // same, in atomic USDC (6 decimals)
 
 // Circle Gateway facilitator middleware — builds the 402, verifies + settles the
 // batched payment on Arc (settlement runs server-side on Vercel's clean network).
@@ -32,8 +30,8 @@ type PaywallResult = { paid: boolean; statusCode: number; headers: Record<string
  * middleware constructs the correct payment requirements from `req.url`, and on a
  * valid payment verifies + settles the batch, then calls next(). We capture that.
  */
-async function runGatewayPaywall(queryId: string, paymentHeader?: string): Promise<PaywallResult> {
-  const mw = gateway().require(PRICE_DOLLARS);
+async function runGatewayPaywall(queryId: string, priceDollars: string, paymentHeader?: string): Promise<PaywallResult> {
+  const mw = gateway().require(priceDollars);
   const req = {
     method: "GET",
     url: `/api/summaries/${encodeURIComponent(queryId)}`,
@@ -73,11 +71,14 @@ async function runGatewayPaywall(queryId: string, paymentHeader?: string): Promi
   return { paid: nexted, statusCode, headers, body };
 }
 
-function recursivePlan(result: ResearchResult) {
+function recursivePlan(result: ResearchResult, price: SelfPrice) {
   const proof = proveGrounding({ query: result.query, synthesis: result.synthesis, payouts: result.payouts ?? [] });
-  const split = recursiveSplit(BigInt(PRICE_USDC_6), proof.grounded);
+  const split = recursiveSplit(price.priceUsdc6, proof.grounded, price.recursiveBps);
   return {
     digest: proof.digest,
+    // The agent quotes its own answer: price + recursive share scale with the
+    // fact-checker's confidence and how deeply the answer was grounded.
+    selfQuote: { priceUSDC: Number(price.priceUsdc6) / 1e6, priceDollars: price.priceDollars, recursiveBps: price.recursiveBps },
     recursive: {
       recursiveBps: split.recursiveBps,
       toAuthorsTotalUSDC: Number(split.toAuthorsTotalAtomic) / 1e6,
@@ -112,9 +113,13 @@ export async function GET(req: Request, ctx: { params: Promise<{ queryId: string
 
   const paymentHeader = req.headers.get("Payment-Signature") ?? req.headers.get("X-PAYMENT") ?? undefined;
 
+  // The agent self-prices this answer (confidence × grounding depth) — the 402
+  // challenge and the recursive split both follow the agent's own quote.
+  const price = selfPriceForSynthesis(result);
+
   // Demo click-through: preview the unlocked content + recursive plan without paying.
   if (paymentHeader === "demo") {
-    const plan = recursivePlan(result);
+    const plan = recursivePlan(result, price);
     return NextResponse.json(
       { queryId, synthesis: result.synthesis, ...plan, settlement: { note: "demo preview — a real GatewayClient payment settles the batch on Arc" } },
       { status: 200 },
@@ -122,7 +127,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ queryId: string
   }
 
   // Real flow: the facilitator builds the 402 (unpaid) or verifies + settles (paid).
-  const pw = await runGatewayPaywall(queryId, paymentHeader);
+  const pw = await runGatewayPaywall(queryId, price.priceDollars, paymentHeader);
   if (!pw.paid) {
     // Unpaid (or invalid payment) → return the facilitator's response verbatim
     // (correct PAYMENT-REQUIRED format the GatewayClient understands).
@@ -133,7 +138,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ queryId: string
   }
 
   // Paid + settled on Arc. Surface the settlement + the recursive split to authors.
-  const plan = recursivePlan(result);
+  const plan = recursivePlan(result, price);
   const settlementTx = pw.headers["X-PAYMENT-RESPONSE"] ?? pw.headers["PAYMENT-RESPONSE"] ?? null;
   return NextResponse.json(
     { queryId, synthesis: result.synthesis, ...plan, settlement: { settled: true, response: settlementTx } },

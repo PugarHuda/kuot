@@ -57,6 +57,33 @@ server.registerTool(
 );
 
 server.registerTool(
+  "kuot_research_paid",
+  {
+    title: "Pay Kuot to research (x402 toll-booth)",
+    description:
+      "Run a research query through Kuot as a PAID agent service: the caller pays Kuot a Circle Gateway " +
+      "batched x402 nanopayment on Arc ($0.001/paper, min $0.002), and Kuot then pays the cited authors. " +
+      "Without payment you get the 402 challenge (price + pay-to); a GatewayClient pays and re-calls with " +
+      "paymentSignature. Pass paymentSignature='demo' to preview the gated flow without settling.",
+    inputSchema: {
+      query: z.string().describe("the research question"),
+      papers: z.number().int().min(1).max(10).optional().describe("how many papers to consult (1-10)"),
+      paymentSignature: z.string().optional().describe("X-PAYMENT / Payment-Signature header value once paid (or 'demo')"),
+    },
+  },
+  async ({ query, papers, paymentSignature }) => {
+    const headers = { "content-type": "application/json", ...(paymentSignature ? { "Payment-Signature": paymentSignature } : {}) };
+    const { status, body } = await jsonFetch("/api/research/x402", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ query, papers }),
+    });
+    const label = status === 402 ? "402 Payment Required (pay, then re-call with paymentSignature)" : `HTTP ${status}`;
+    return { content: [{ type: "text", text: `${label}\n${JSON.stringify(body, null, 2)}` }] };
+  },
+);
+
+server.registerTool(
   "kuot_cite",
   {
     title: "Cite Kuot (reverse-x402)",

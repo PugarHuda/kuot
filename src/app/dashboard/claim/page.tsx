@@ -43,6 +43,29 @@ export default function ClaimPage() {
       .catch(() => setStatus(null));
   }, []);
 
+  // Referral pre-fill: a shareable claim link like /dashboard/claim?orcid=0000-0001-...
+  // lands the author with their ORCID already filled in — frictionless onboarding.
+  useEffect(() => {
+    const o = new URLSearchParams(window.location.search).get("orcid");
+    if (o && /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/i.test(o.trim())) setOrcid(o.trim());
+  }, []);
+
+  // Live onboarding/traction counter for the campaign.
+  const [stats, setStats] = useState<{ authorsOnboarded: number; attributedUSDC: number; citedAuthors: number } | null>(null);
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    fetch("/api/stats").then((r) => r.json()).then(setStats).catch(() => setStats(null));
+  }, []);
+  const copyClaimLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/dashboard/claim?orcid=${encodeURIComponent(orcid)}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* clipboard unavailable */
+    }
+  }, [orcid]);
+
   const verifiedOrcid = status?.verifiedOrcid ?? null;
   const escrowAddress = process.env.NEXT_PUBLIC_UNCLAIMED_ESCROW as `0x${string}` | undefined;
 
@@ -127,6 +150,27 @@ export default function ClaimPage() {
         operator relays an on-chain binding — every Kuot citation of your work then pays
         <span className="italic"> your real wallet</span>. You pay no gas.
       </p>
+
+      {/* Campaign banner: your work is already earning — claim it, and share the link. */}
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/5 p-4">
+        <div className="text-sm">
+          <span className="font-semibold text-[var(--accent)]">Your work is already earning.</span>{" "}
+          {stats ? (
+            <span className="text-[var(--ink)]/75">
+              {stats.authorsOnboarded} author{stats.authorsOnboarded === 1 ? "" : "s"} onboarded ·{" "}
+              {stats.citedAuthors} cited · ${stats.attributedUSDC.toFixed(4)} attributed on-chain.
+            </span>
+          ) : (
+            <span className="text-[var(--ink)]/60">Bind your ORCID + wallet to collect what your citations have earned.</span>
+          )}
+        </div>
+        <button
+          onClick={copyClaimLink}
+          className="shrink-0 rounded-md border border-[var(--accent)]/40 px-3 py-1.5 text-[12px] font-medium text-[var(--accent)] transition hover:bg-[var(--accent)]/10"
+        >
+          {copied ? "✓ Link copied" : "Copy your claim link"}
+        </button>
+      </div>
 
       <div data-tour="claim-card" className="card mt-8 space-y-5 p-6">
         {/* 1. connect wallet */}

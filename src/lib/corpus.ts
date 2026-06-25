@@ -86,6 +86,8 @@ export type Work = {
   authors: Author[];
   /** Relevance rank (0 = most relevant) used to weight citation payouts. */
   rank: number;
+  /** Where the source came from: academic corpus (OpenAlex) or a live publisher feed. */
+  source?: "openalex" | "rsshub";
 };
 
 /** Reconstruct an abstract from OpenAlex's inverted index. */
@@ -130,6 +132,79 @@ export type CorpusOptions = {
 export function sanitizeQuery(query: string): string {
   const cleaned = query.replace(/[?*"]/g, " ").replace(/\s+/g, " ").trim();
   return cleaned || query.trim();
+}
+
+// ---- Real publisher sources via RSSHub (Prior Art #01: content that earns when cited) ----
+
+const RSSHUB_BASE = (process.env.KUOT_RSSHUB_BASE ?? "https://rsshub.app").replace(/\/$/, "");
+
+/** Strip HTML tags + decode the few entities we care about, for a clean abstract. */
+function stripHtml(s: string): string {
+  return s
+    .replace(/<!\[CDATA\[|\]\]>/g, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function tag(block: string, name: string): string {
+  const m = block.match(new RegExp(`<${name}[^>]*>([\\s\\S]*?)</${name}>`, "i"));
+  return m ? stripHtml(m[1]) : "";
+}
+
+/** A publisher's payout identity, derived from its name (stable, claimable). */
+function publisherIdentity(name: string): string {
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "publisher";
+  return `rsshub:${slug}`;
+}
+
+/**
+ * Fetch REAL publisher articles for a query from a live RSSHub feed (Google News
+ * route) and map them to Works. The "author" is the publisher, so a citation-toll
+ * settles to a claimable publisher identity. Degrades to [] on any failure, so the
+ * academic corpus remains the backbone — this is pure augmentation.
+ */
+export async function searchRSSHub(query: string, count = 3): Promise<Work[]> {
+  if (count <= 0) return [];
+  const kw = encodeURIComponent(sanitizeQuery(query).slice(0, 80));
+  const url = `${RSSHUB_BASE}/google/news/${kw}/en`;
+  try {
+    const res = await fetch(url, { headers: { accept: "application/rss+xml, application/xml, text/xml" }, signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return [];
+    const xml = await res.text();
+    const items = xml.split(/<item>/i).slice(1).map((s) => s.split(/<\/item>/i)[0]);
+    const works: Work[] = [];
+    for (let i = 0; i < items.length && works.length < count; i++) {
+      const block = items[i];
+      const link = tag(block, "link");
+      let title = tag(block, "title");
+      if (!title || !link) continue;
+      // Google News titles are "Headline - Publisher"; the <source> tag names the publisher.
+      let publisher = tag(block, "source");
+      if (!publisher && / - [^-]+$/.test(title)) {
+        const parts = title.split(" - ");
+        publisher = parts[parts.length - 1].trim();
+        title = parts.slice(0, -1).join(" - ").trim();
+      }
+      publisher = publisher || "Publisher";
+      const identity = publisherIdentity(publisher);
+      const r = (await resolveAuthorWallets([identity])).get(identity) ?? { wallet: demoWallet(identity), claimed: false };
+      works.push({
+        id: `rsshub:${link}`,
+        title,
+        url: link,
+        abstract: (tag(block, "description") || title).slice(0, 1200),
+        rank: i,
+        source: "rsshub",
+        authors: [{ id: identity, name: publisher, orcid: undefined, wallet: r.wallet, claimed: r.claimed }],
+      });
+    }
+    return works;
+  } catch {
+    return []; // network/timeout/parse — academic corpus carries the run
+  }
 }
 
 /** Search OpenAlex and return the top works with authors + abstracts. */
@@ -187,6 +262,7 @@ export async function searchCorpus(query: string, opts: CorpusOptions = {}): Pro
           url,
           abstract: deinvert(w.abstract_inverted_index).slice(0, 1200),
           rank,
+          source: "openalex",
           authors: authors.map((a) => {
             const r = wallets.get(identityOf(a)) ?? { wallet: demoWallet(identityOf(a)), claimed: false };
             return { id: a.id, name: a.name, orcid: a.orcid, wallet: r.wallet, claimed: r.claimed };

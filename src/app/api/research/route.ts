@@ -20,6 +20,7 @@ export async function POST(req: Request) {
     language?: string;
     rootBudgetUSDC?: number;
     excludeIds?: string[];
+    webSources?: number;
   };
   try {
     body = await req.json();
@@ -44,6 +45,7 @@ export async function POST(req: Request) {
       excludeIds: Array.isArray(body.excludeIds)
         ? body.excludeIds.filter((x) => typeof x === "string").slice(0, 200)
         : undefined,
+      webSources: typeof body.webSources === "number" ? Math.min(5, Math.max(0, body.webSources)) : undefined,
     });
     return NextResponse.json(result);
   } catch (e) {
