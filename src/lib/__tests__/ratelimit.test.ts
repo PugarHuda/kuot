@@ -33,9 +33,16 @@ describe("rateLimit", () => {
 });
 
 describe("clientIp", () => {
-  it("takes the first x-forwarded-for hop", () => {
+  it("prefers the trusted Vercel header over a client-forgeable x-forwarded-for", () => {
+    const req = new Request("https://x.test", {
+      headers: { "x-vercel-forwarded-for": "9.9.9.9", "x-forwarded-for": "1.2.3.4, 5.6.7.8" },
+    });
+    expect(clientIp(req)).toBe("9.9.9.9");
+  });
+
+  it("uses the RIGHTMOST x-forwarded-for hop (closest to our edge), not the spoofable leftmost", () => {
     const req = new Request("https://x.test", { headers: { "x-forwarded-for": "1.2.3.4, 5.6.7.8" } });
-    expect(clientIp(req)).toBe("1.2.3.4");
+    expect(clientIp(req)).toBe("5.6.7.8");
   });
 
   it("falls back to x-real-ip then 'unknown'", () => {
