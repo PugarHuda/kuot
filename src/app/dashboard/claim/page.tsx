@@ -107,7 +107,7 @@ export default function ClaimPage() {
       const tx = await writeContractAsync({
         address: CITATION_YIELD,
         abi: YIELD_ABI,
-        functionName: "claimBonus",
+        functionName: "claim",
         args: [identityId(verifiedOrcid)],
       });
       setBonusTx(tx);
