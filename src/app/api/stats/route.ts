@@ -20,7 +20,6 @@ const RECORDED = parseAbiItem(
   "event Recorded(bytes32 indexed authorHash, uint256 amount, uint256 newTotal)",
 );
 const BINDING_COUNT = parseAbiItem("function bindingCount() view returns (uint256)");
-const OWED = parseAbiItem("function owed(bytes32 authorHash) view returns (uint256)");
 
 /**
  * GET /api/stats — public traction snapshot for the author-onboarding campaign.
@@ -68,6 +67,12 @@ export async function GET() {
 
   // Authors with a real claimable balance held in UnclaimedEscrow (the wider
   // cohort: every cited co-author, not only those already paid via the ledger).
+  // Derived from the `Recorded(authorHash, amount, newTotal)` events ALONE — the
+  // latest newTotal per hash is that author's recorded balance. We deliberately do
+  // NOT read `owed` per hash: at hundreds of authors that was N RPC calls per
+  // request, which intermittently rate-limited/timed out and zeroed the stat. The
+  // only deduction we miss is a withdrawal (rare; recorded via a separate path),
+  // so this slightly over-counts after a claim — acceptable for a traction figure.
   let escrowedAuthors = 0;
   let escrowedAtomic = 0n;
   try {
@@ -79,14 +84,12 @@ export async function GET() {
           ranges.map(({ lo, hi }) => client.getLogs({ address: ESCROW, event: RECORDED, fromBlock: lo, toBlock: hi })),
         )
       ).flat();
-      const hashes = [...new Set(recLogs.map((l) => String(l.args.authorHash)))] as `0x${string}`[];
-      // Current owed (net of withdrawals) per distinct author — the honest live total.
-      const owed = await Promise.all(
-        hashes.map((h) => client.readContract({ address: ESCROW, abi: [OWED], functionName: "owed", args: [h] }) as Promise<bigint>),
-      );
-      for (const o of owed) {
-        if (o > 0n) escrowedAuthors += 1;
-        escrowedAtomic += o;
+      // latest newTotal wins per author (logs arrive in block order within/after flatten)
+      const latestTotal = new Map<string, bigint>();
+      for (const l of recLogs) latestTotal.set(String(l.args.authorHash), l.args.newTotal as bigint);
+      for (const total of latestTotal.values()) {
+        if (total > 0n) escrowedAuthors += 1;
+        escrowedAtomic += total;
       }
     }
   } catch {
