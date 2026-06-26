@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { swapOnArc, poolReserves, type FxToken } from "@/lib/onchain-fx";
+import { devTokenOk } from "@/lib/authz";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const MAX_FX = 5; // USDC/EURC per swap
 
 /**
  * GET /api/dev/fx-swap?token=<DEV_PAY_TOKEN>&from=USDC&amount=0.1
@@ -11,14 +14,16 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const token = process.env.DEV_PAY_TOKEN;
-  if (token && url.searchParams.get("token") !== token) {
-    return NextResponse.json({ error: "forbidden — pass ?token=" }, { status: 403 });
+  // FAIL CLOSED: operator-signed swap of operator funds.
+  if (!devTokenOk(req)) {
+    return NextResponse.json({ error: "forbidden — set DEV_PAY_TOKEN and pass ?token=" }, { status: 403 });
   }
   const from = (url.searchParams.get("from") === "EURC" ? "EURC" : "USDC") as FxToken;
   const amount = Number(url.searchParams.get("amount") ?? "0.1");
-  const amountIn = BigInt(Math.max(0, Math.round(amount * 1e6)));
-  if (amountIn <= 0n) return NextResponse.json({ ok: false, error: "amount must be > 0" }, { status: 400 });
+  if (!Number.isFinite(amount) || amount <= 0 || amount > MAX_FX) {
+    return NextResponse.json({ ok: false, error: `amount must be 0 < x ≤ ${MAX_FX}` }, { status: 400 });
+  }
+  const amountIn = BigInt(Math.round(amount * 1e6));
 
   try {
     const before = await poolReserves();

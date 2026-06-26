@@ -4,7 +4,9 @@
 > the papers it reads with **x402 nanopayments** on **Arc**, then splits **USDC** back to every
 > author whose work **grounded** the answer — gas-free and batched via **Circle Gateway**. Every
 > answer is itself a paid resource: when another agent cites Kuot, a fraction flows **recursively**
-> back to the original authors. Unclaimed rewards earn **real USYC yield** until they're claimed.
+> back to the original authors. Unclaimed rewards accrue yield in a **USYC-style ERC-4626 vault**
+> (a self-funded `MockUSYC` stand-in on testnet — real USYC is institution-gated — with the same
+> deposit/redeem interface) until they're claimed.
 
 Built for the **Lepton Agents Hackathon — Canteen × Circle × Arc** (June 2026).
 
@@ -26,7 +28,8 @@ Built for the **Lepton Agents Hackathon — Canteen × Circle × Arc** (June 202
 ## Differentiators
 - **Recursive reverse-x402** — being cited earns money; the citation graph pays itself, depth after depth.
 - **Proof-of-grounding before pay** — an on-chain digest; only grounding authors are paid.
-- **USYC-backed yield** — unclaimed rewards earn real tokenized-treasury yield (ERC-4626 vault).
+- **USYC-style yield** — unclaimed rewards accrue in a real ERC-4626 vault (a self-funded `MockUSYC`
+  stand-in on testnet; real USYC is institution-gated but shares the same redeem interface).
 - **Directional reputation-as-collateral** — USDC bond, slashable on a false citation (ERC-8004) —
   trust as a from→to→context vector, not a single score.
 - **Agent-payable toll-booth** — external agents pay Kuot to research via `POST /api/research/x402`

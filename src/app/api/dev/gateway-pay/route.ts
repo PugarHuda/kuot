@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { GatewayClient } from "@circle-fin/x402-batching/client";
+import { devTokenOk } from "@/lib/authz";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,11 +13,9 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  // Gate: each call spends $0.0001 from the operator's Gateway balance, so require
-  // a token (set DEV_PAY_TOKEN) to stop the balance being drained by abuse.
-  const token = process.env.DEV_PAY_TOKEN;
-  if (token && url.searchParams.get("token") !== token) {
-    return NextResponse.json({ error: "forbidden — pass ?token=" }, { status: 403 });
+  // FAIL CLOSED: each call spends from the operator's Gateway balance.
+  if (!devTokenOk(req)) {
+    return NextResponse.json({ error: "forbidden — set DEV_PAY_TOKEN and pass ?token=" }, { status: 403 });
   }
   const id = url.searchParams.get("id") ?? "14c966d503a1d1b2";
   const pk = process.env.AGENT_PRIVATE_KEY ?? process.env.PRIVATE_KEY;

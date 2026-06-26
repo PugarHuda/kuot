@@ -29,10 +29,13 @@ Deployer/operator/agent: `0x31481ADc889B5e00b70846F59967DAF09CBe4a3e`
 - tx `0xad77a890ee39fe4327d3455f2c140bf21d4ff02dc4f332419f118329463c01ed` (block 47802177, status success)
 - `isGrounded(queryId, authorHash)` → `true`; `verify(queryId, digest)` → `true`
 
-**USYC real yield** — `CitationYieldUSYC` over `MockUSYC` vault
+**USYC-style yield (ERC-4626)** — `CitationYieldUSYC` over a `MockUSYC` vault
 - `accrue` 1.0 USDC → `currentValue` = 1.000000, `pendingYield` = 0
 - `MockUSYC.simulateYield` 0.5 USDC → `currentValue` = **1.500000**, `pendingYield` = **0.500000**
-- → an unclaimed author redeems principal + real on-chain yield (not subsidised)
+- → an unclaimed author redeems principal + yield through a real ERC-4626 deposit/redeem path.
+- HONEST NOTE: this is a **self-funded `MockUSYC` stand-in**, not real USYC (which is gated to
+  $100k+ institutions). The yield is seeded by `simulateYield`, not earned from treasuries — the
+  *mechanism* (vault shares + redeem) is real and matches USYC's interface; the *yield source* is a stub.
 
 **Circle Gateway nanopayments** — FULLY SETTLING end-to-end ✅
 - Agent's Gateway balance funded with a **real on-chain deposit** (1 USDC): approve `0xdb70b578…`,
@@ -62,10 +65,13 @@ Deployer/operator/agent: `0x31481ADc889B5e00b70846F59967DAF09CBe4a3e`
 - capital at risk, keyed by (from→to→context) — slashable via `slash(id, beneficiary)`
 
 ## Deepening the Circle stack — solutions to the testnet/API walls
-- **CCTP cross-chain — SOLVED, live.** Instead of Gateway `withdraw` (which needs the Gateway API +
-  destination gas), call **CCTP V2 `depositForBurn` directly on Arc** (pure on-chain, no Gateway API).
-  Real burn tx: **`0xceb08d128510915eed26c6b4f300dbaf8abf85d2b87ebd102ec3fb16c2f05715`** — 0.05 USDC
-  burned on Arc, cross-chain message emitted (TokenMessengerV2 `0x8FE6B999…`, dest domain 6 = Base).
+- **CCTP V2 cross-chain — live + reproducible from code.** Instead of Gateway `withdraw` (which needs
+  the Gateway API + destination gas), call **CCTP V2 `depositForBurn` directly on Arc** (pure on-chain).
+  Reproduce: **`node scripts/cctp-burn.mjs 0.05`** (approve TokenMessengerV2 → depositForBurn → Base,
+  domain 6). Fresh burn tx **`0x05b0cd2fb8f72a0eefcaf741fe0948f9481210b39df81d02cae25d56ae424ccd`**
+  (status success, 7 logs; TokenMessengerV2 `0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA`). Mint on Base
+  is completed via Circle's attestation service. (Earlier hand-run burn:
+  `0xceb08d128510915eed26c6b4f300dbaf8abf85d2b87ebd102ec3fb16c2f05715`.)
 - **EURC multi-currency — SOLVED, live.** StableFX USDC↔EURC has no route on Arc testnet, so pay EU
   authors by **transferring EURC directly** (EURC `0x89B5…D72a` is native on Arc) — no swap. Proven:
   operator paid **0.05 EURC** to an author, tx

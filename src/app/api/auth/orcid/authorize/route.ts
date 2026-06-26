@@ -13,7 +13,9 @@ export async function GET(req: NextRequest) {
     );
   }
   const expected = req.nextUrl.searchParams.get("orcid") ?? "";
-  const returnTo = req.nextUrl.searchParams.get("returnTo") ?? "/claim";
+  // Same-origin relative paths only (open-redirect guard) — stored, then used by the callback.
+  const rawReturn = req.nextUrl.searchParams.get("returnTo") ?? "/claim";
+  const returnTo = rawReturn.startsWith("/") && !rawReturn.startsWith("//") ? rawReturn : "/claim";
   const state = crypto.randomBytes(16).toString("hex");
 
   const res = NextResponse.redirect(orcidAuthorizeUrl(state));

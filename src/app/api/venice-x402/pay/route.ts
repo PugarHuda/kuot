@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { privateKeyToAccount } from "viem/accounts";
 import { payVeniceX402 } from "@/lib/venice-x402";
+import { devTokenOk } from "@/lib/authz";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -15,6 +16,11 @@ export const maxDuration = 60;
  * code path still runs end-to-end.
  */
 export async function POST(req: Request) {
+  // FAIL CLOSED: settling signs an EIP-3009 USDC authorization (~10 USDC on Base)
+  // with the operator key. Anonymous callers must never be able to spend it.
+  if (!devTokenOk(req)) {
+    return NextResponse.json({ error: "forbidden — set DEV_PAY_TOKEN and pass x-dev-token / ?token=" }, { status: 403 });
+  }
   let body: { messages?: { role: string; content: string }[]; confirm?: boolean };
   try {
     body = await req.json();

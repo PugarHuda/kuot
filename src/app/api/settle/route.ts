@@ -3,6 +3,7 @@ import { operatorAttest, operatorAttestAndSplit, queryIdOf } from "@/lib/settlem
 import { escrowUnclaimed } from "@/lib/escrow";
 import { commitGrounding, identityHash } from "@/lib/grounding";
 import { arcTestnet } from "@/lib/chains";
+import { devTokenOk } from "@/lib/authz";
 import type { CitationPayout } from "@/lib/agent";
 
 const ARC_TX = (h: string) => `https://testnet.arcscan.app/tx/${h}`;
@@ -50,14 +51,6 @@ type Body = {
 // operator USDC (legit settles are sub-cent up to the ~$2 max grant).
 const MAX_SETTLE_USDC6 = 5_000_000n; // $5
 
-/** Money-MOVING settle paths (split, escrow funding) require the operator token. */
-function settleAuthorized(req: Request): boolean {
-  const token = process.env.DEV_PAY_TOKEN;
-  if (!token) return false; // fail-safe: unset → no operator-funded payouts at all
-  const provided = req.headers.get("x-settle-token") ?? new URL(req.url).searchParams.get("token");
-  return provided === token;
-}
-
 /** Cheap sanity on the payout plan (the ledger also enforces the weight sum on-chain). */
 function payoutsValid(payouts: CitationPayout[]): boolean {
   if (!payouts.length || payouts.length > 64) return false;
@@ -98,8 +91,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `amountUSDC6 out of range (0..${MAX_SETTLE_USDC6} atomic = $5 cap)` }, { status: 400 });
   }
 
-  // Paths that move operator USDC (split, escrow funding) require the operator token.
-  const authorized = settleAuthorized(req);
+  // Every settle path makes the OPERATOR sign + broadcast an on-chain tx (gas) and
+  // sets attested[queryId] (which would block the real paid split if a stranger
+  // pre-attested a public queryId). So require the operator token for ALL modes —
+  // fail closed. Read-only research/plans stay open via /api/research.
+  const authorized = devTokenOk(req);
+  if (!authorized) {
+    return NextResponse.json(
+      { error: "forbidden — settle signs an operator tx; provide the operator token (x-settle-token / x-dev-token / ?token=)" },
+      { status: 403 },
+    );
+  }
   const queryId = queryIdOf(body.query);
 
   // Prefunded split (Kutip-style upfront): the operator already holds the locked

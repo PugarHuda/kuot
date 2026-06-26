@@ -12,21 +12,23 @@ export async function GET(req: NextRequest) {
   if (!isDemoVerifyAllowed()) return NextResponse.redirect(new URL("/claim?err=demo_disabled", req.url));
 
   const orcid = normalizeOrcid(req.nextUrl.searchParams.get("orcid") ?? "");
-  const returnTo = req.nextUrl.searchParams.get("returnTo") ?? "/claim";
+  // Same-origin relative paths only — never an absolute/protocol-relative URL (open-redirect guard).
+  const rawReturn = req.nextUrl.searchParams.get("returnTo") ?? "/claim";
+  const returnTo = rawReturn.startsWith("/") && !rawReturn.startsWith("//") ? rawReturn : "/claim";
   if (!isValidOrcidFormat(orcid)) return NextResponse.redirect(new URL("/claim?err=demo_bad_orcid", req.url));
 
-  // Real researchers must use the real OAuth flow. The demo path allows the
-  // ORCID test record, or any ORCID that doesn't resolve to a real person.
+  // Real researchers must use the real OAuth flow. The demo path allows ONLY the
+  // ORCID test record or an iD that DEFINITIVELY does not resolve to a real person
+  // (HTTP 404). FAIL CLOSED: any real record — or any inconclusive lookup (timeout,
+  // 429 rate-limit, 5xx) — is rejected, so a real author's escrow can never be
+  // bound by a stranger by racing an ORCID API hiccup.
   if (orcid !== JOSIAH_TEST_ORCID) {
-    try {
-      const lookup = await lookupOrcid(orcid);
-      if (lookup.real) {
-        return NextResponse.redirect(
-          new URL(`/claim?err=demo_real_orcid&orcid=${encodeURIComponent(orcid)}`, req.url),
-        );
-      }
-    } catch {
-      /* network failure — allow (allowlist already restrictive) */
+    const lookup = await lookupOrcid(orcid);
+    const definitivelyNotReal = lookup.exists === false && !lookup.error; // only a clean 404
+    if (!definitivelyNotReal) {
+      return NextResponse.redirect(
+        new URL(`/claim?err=demo_real_orcid&orcid=${encodeURIComponent(orcid)}`, req.url),
+      );
     }
   }
 

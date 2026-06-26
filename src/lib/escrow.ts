@@ -16,6 +16,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { arcTestnet, USDC } from "./chains";
 import { authorHash } from "./registry";
 import { accrueYield } from "./yield";
+import { isValidOrcidFormat } from "./orcid";
 import type { CitationPayout } from "./agent";
 
 const ESCROW = process.env.NEXT_PUBLIC_UNCLAIMED_ESCROW as Address | undefined;
@@ -80,7 +81,10 @@ export async function escrowUnclaimed(args: {
   const opKey = process.env.OPERATOR_PRIVATE_KEY as `0x${string}` | undefined;
   if (!opKey) throw new Error("OPERATOR_PRIVATE_KEY not configured");
 
-  const unclaimed = args.payouts.filter((p) => !p.claimed && p.identity);
+  // Only escrow identities that can actually be CLAIMED later. The bind path
+  // (/api/claim) binds an ORCID hash, so escrowing a bare OpenAlex id would strand
+  // the USDC forever (no producible binding). Require a valid ORCID identity.
+  const unclaimed = args.payouts.filter((p) => !p.claimed && p.identity && isValidOrcidFormat(p.identity));
   if (unclaimed.length === 0) return null;
 
   // Guard: never send USDC to the escrow address unless the contract is actually
