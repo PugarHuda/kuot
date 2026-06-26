@@ -8,7 +8,14 @@ import { useEffect, useState } from "react";
 // rail (USDC on Arc, gas-free) is mentioned only as reassurance at the bottom.
 
 type Owed = { identity: string; owedUSDC6?: string } | null;
-type Stats = { authorsOnboarded: number; authorPayouts: number; citedAuthors: number; attributedUSDC: number } | null;
+type Stats = {
+  authorsOnboarded: number;
+  authorPayouts: number;
+  citedAuthors: number;
+  attributedUSDC: number;
+  escrowedAuthors?: number;
+  escrowedUSDC?: number;
+} | null;
 
 const ORCID_RE = /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/i;
 
@@ -138,9 +145,12 @@ export default function Cited() {
       {/* Quiet social proof from real on-chain numbers */}
       {stats ? (
         <section className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-2 rounded-xl border border-[var(--rule)] bg-[var(--paper-2)] px-6 py-4 text-sm">
+          {stats.escrowedAuthors ? (
+            <div><span className="serif text-xl font-semibold text-[var(--accent)]">{stats.escrowedAuthors}</span> <span className="text-[var(--ink)]/60">authors with earnings waiting</span></div>
+          ) : null}
           <div><span className="serif text-xl font-semibold text-[var(--accent)]">{stats.citedAuthors}</span> <span className="text-[var(--ink)]/60">authors paid</span></div>
           <div><span className="serif text-xl font-semibold text-[var(--accent)]">{stats.authorPayouts}</span> <span className="text-[var(--ink)]/60">citation payouts</span></div>
-          <div><span className="serif text-xl font-semibold text-[var(--accent)]">${stats.attributedUSDC.toFixed(2)}</span> <span className="text-[var(--ink)]/60">paid to sources</span></div>
+          <div><span className="serif text-xl font-semibold text-[var(--accent)]">${((stats.escrowedUSDC ?? 0) + stats.attributedUSDC).toFixed(2)}</span> <span className="text-[var(--ink)]/60">attributed to sources</span></div>
         </section>
       ) : null}
 

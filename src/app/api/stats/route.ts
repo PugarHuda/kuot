@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 const LEDGER = process.env.NEXT_PUBLIC_ATTRIBUTION_LEDGER as Address | undefined;
 const NAME_REGISTRY = process.env.NEXT_PUBLIC_NAME_REGISTRY as Address | undefined;
+const ESCROW = process.env.NEXT_PUBLIC_UNCLAIMED_ESCROW as Address | undefined;
 
 const QUERY_ATTESTED = parseAbiItem(
   "event QueryAttested(bytes32 indexed queryId, address indexed payer, uint256 total, uint256 citationCount)",
@@ -15,7 +16,11 @@ const QUERY_ATTESTED = parseAbiItem(
 const AUTHOR_PAID = parseAbiItem(
   "event AuthorPaid(bytes32 indexed queryId, address indexed author, uint256 amount, uint16 weightBps)",
 );
+const RECORDED = parseAbiItem(
+  "event Recorded(bytes32 indexed authorHash, uint256 amount, uint256 newTotal)",
+);
 const BINDING_COUNT = parseAbiItem("function bindingCount() view returns (uint256)");
+const OWED = parseAbiItem("function owed(bytes32 authorHash) view returns (uint256)");
 
 /**
  * GET /api/stats — public traction snapshot for the author-onboarding campaign.
@@ -61,6 +66,34 @@ export async function GET() {
   }
   const attributedUSDC = Number(attributedAtomic) / 1e6;
 
+  // Authors with a real claimable balance held in UnclaimedEscrow (the wider
+  // cohort: every cited co-author, not only those already paid via the ledger).
+  let escrowedAuthors = 0;
+  let escrowedAtomic = 0n;
+  try {
+    if (ESCROW) {
+      const latest = await client.getBlockNumber();
+      const ranges = ledgerRanges(latest);
+      const recLogs = (
+        await Promise.all(
+          ranges.map(({ lo, hi }) => client.getLogs({ address: ESCROW, event: RECORDED, fromBlock: lo, toBlock: hi })),
+        )
+      ).flat();
+      const hashes = [...new Set(recLogs.map((l) => String(l.args.authorHash)))] as `0x${string}`[];
+      // Current owed (net of withdrawals) per distinct author — the honest live total.
+      const owed = await Promise.all(
+        hashes.map((h) => client.readContract({ address: ESCROW, abi: [OWED], functionName: "owed", args: [h] }) as Promise<bigint>),
+      );
+      for (const o of owed) {
+        if (o > 0n) escrowedAuthors += 1;
+        escrowedAtomic += o;
+      }
+    }
+  } catch {
+    /* network — escrow stats are additive, omit on failure */
+  }
+  const escrowedUSDC = Number(escrowedAtomic) / 1e6;
+
   let authorsOnboarded = 0;
   try {
     if (NAME_REGISTRY) {
@@ -78,6 +111,8 @@ export async function GET() {
     authorPayouts, // on-chain AuthorPaid events
     citedAuthors: uniqueAuthors.size, // distinct authors paid
     attributedUSDC: Number(attributedUSDC.toFixed(6)),
+    escrowedAuthors, // distinct authors with a claimable balance waiting (escrow)
+    escrowedUSDC: Number(escrowedUSDC.toFixed(6)), // total currently owed in escrow
     ledger: LEDGER ?? null,
   });
 }
