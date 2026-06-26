@@ -26,10 +26,13 @@ Record at 1080p, captions on. Keep each beat tight — aim ~20s each.
 - VO: "We commit a tamper-evident digest and pay only proven sources — closing the
   pay-then-maybe-delivered gap."
 
-## 1:25–1:55 — Real yield while unclaimed (USYC) + multi-currency (EURC)
-- Show an unclaimed author's escrow growing: `currentValue` 1.0 → after vault yield → **1.5 USDC**.
-- VO: "Unclaimed rewards aren't idle — they earn real on-chain yield in a USYC vault until the
-  author claims. EU authors can take EURC via Circle App Kit Swap."
+## 1:25–1:55 — Unclaimed rewards accrue (ERC-4626) + EURC + the agent's OWN wallet pays
+- Show an unclaimed author's escrow + the ERC-4626 vault redeem: `currentValue` 1.0 → +vault → **1.5 USDC**.
+- VO: "Unclaimed rewards sit in an ERC-4626 vault and accrue until claimed — a USYC-style stand-in on
+  testnet (real USYC is institution-gated). EU authors can take EURC; the on-chain USDC↔EURC swap runs
+  on our own StableFX pool since Circle's App Kit has no Arc route yet."
+- Beat (Agent Wallets): show the `/api/settle` response `agentWallet.transactionId` — the agent pays its
+  top source DIRECTLY from its own **Circle Agent Wallet** (developer-controlled, MPC-signed), in-loop.
 
 ## 1:55–2:30 — Recursive reverse-x402 (the headline, RFB-03)
 - Open the MCP tool (Claude Desktop/Cursor) — another agent calls `kuot_cite(queryId)`.
@@ -40,10 +43,11 @@ Record at 1080p, captions on. Keep each beat tight — aim ~20s each.
 ## 2:30–3:00 — Traction & close
 - Run it live: `npm run traction -- 5` — an external **buyer agent** pays the x402 toll-booth +
   cites Kuot 5×; each line is a real Gateway-batched settlement on Arc (tx ids printed).
-- Cut to `/dashboard` + `GET /api/stats`: attestations, author payouts, USDC attributed, **authors
-  onboarded** tick up live.
-- VO: "Ten contracts live on Arc, real agent-to-agent USDC flowing, an MCP other agents can pay
-  today. This is the beginning — we keep building past the event." End on repo + live URL.
+- Cut to `/dashboard` + `GET /api/stats`: **157 authors hold a real on-chain balance ($9 escrowed)**,
+  185 cited / 191 payouts / **$8.7 attributed** (~$18 total to sources) — all read live from Arc.
+- VO: "Ten contracts live on Arc, 150+ real researchers already owed USDC, 20+ real agent-to-agent
+  payments, an MCP other agents can pay today. This is the beginning — we keep building past the
+  event." End on repo + live URL (`/cited` for authors).
 
 ## Shot list / assets
 - Browser: `/dashboard/research`, `/dashboard/activity`, `/dashboard/agents`.
