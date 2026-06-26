@@ -26,9 +26,20 @@ export function rateLimit(key: string, limit: number, windowMs: number): { ok: b
   return { ok: true, retryAfter: 0, remaining: limit - b.count };
 }
 
-/** Best-effort client IP from the proxy headers (Vercel sets x-forwarded-for). */
+/**
+ * Client IP for throttling. Prefer headers our proxy (Vercel) SETS and overwrites —
+ * `x-vercel-forwarded-for` / `x-real-ip` — which a client can't forge. Only fall
+ * back to `x-forwarded-for`, and then take the RIGHTMOST hop (closest to our edge),
+ * never the client-controllable leftmost value (which made the throttle bypassable
+ * by rotating the header).
+ */
 export function clientIp(req: Request): string {
+  const trusted = req.headers.get("x-vercel-forwarded-for") ?? req.headers.get("x-real-ip");
+  if (trusted) return trusted.trim();
   const xff = req.headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0].trim();
-  return req.headers.get("x-real-ip") ?? "unknown";
+  if (xff) {
+    const parts = xff.split(",").map((s) => s.trim()).filter(Boolean);
+    if (parts.length) return parts[parts.length - 1];
+  }
+  return "unknown";
 }

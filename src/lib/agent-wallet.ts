@@ -86,3 +86,42 @@ export async function transferUSDC(args: {
   });
   return r.data;
 }
+
+const ARC_AGENT_WALLET = "0x69906004c174c84ba9082f0f85dfa08ca7eb7cea";
+/** Hard cap so an in-loop autonomous payout can never drain the wallet. */
+const MAX_AGENT_AUTOPAY = 0.1; // USDC
+
+export type AgentWalletPayout = { payer: `0x${string}`; to: `0x${string}`; amountUSDC: string; transactionId?: string; state?: string };
+
+/**
+ * Autonomous in-loop payout: the research agent pays one cited author DIRECTLY
+ * from its own Circle Agent Wallet (developer-controlled, MPC-signed) — a real
+ * Agent-Wallet settlement inside the research→settle loop, not a dev-only proof.
+ * Best-effort and self-capped: resolves the Arc wallet + USDC token, skips quietly
+ * if the wallet holds no USDC or anything fails (never blocks the on-chain attest).
+ */
+export async function agentWalletPayout(to: `0x${string}`, amountUSDC: number): Promise<AgentWalletPayout | null> {
+  if (!process.env.CIRCLE_API_KEY || !process.env.CIRCLE_ENTITY_SECRET) return null;
+  const amount = Math.min(MAX_AGENT_AUTOPAY, amountUSDC);
+  if (!(amount > 0) || !/^0x[0-9a-fA-F]{40}$/.test(to)) return null;
+  try {
+    const c = client();
+    const wls = (await c.listWallets({ blockchain: ARC_BLOCKCHAIN }))?.data?.wallets ?? [];
+    const w = wls.find((x) => x.address?.toLowerCase() === ARC_AGENT_WALLET) ?? wls[0];
+    if (!w?.id || !w.address) return null;
+    const bals = (await c.getWalletTokenBalance({ id: w.id }))?.data?.tokenBalances ?? [];
+    const usdc = bals.find((b) => b.token?.symbol === "USDC");
+    if (!usdc?.token?.id || Number(usdc.amount ?? 0) < amount) return null; // no funds → skip cleanly
+    const amt = amount.toFixed(6);
+    const tx = await c.createTransaction({
+      walletId: w.id,
+      tokenId: usdc.token.id,
+      destinationAddress: to,
+      amount: [amt],
+      fee: { type: "level", config: { feeLevel: "MEDIUM" } },
+    });
+    return { payer: w.address as `0x${string}`, to, amountUSDC: amt, transactionId: tx.data?.id, state: tx.data?.state };
+  } catch {
+    return null;
+  }
+}

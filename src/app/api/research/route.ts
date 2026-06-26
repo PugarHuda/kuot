@@ -44,14 +44,16 @@ export async function POST(req: Request) {
 
   try {
     const result = await runResearch(query, {
-      papers: body.papers,
+      // Clamp paper count on the free tier — each paper is a parallel Venice reader.
+      papers: typeof body.papers === "number" ? Math.min(12, Math.max(1, Math.floor(body.papers))) : undefined,
       fromYear: body.fromYear,
       toYear: body.toYear,
       language: body.language,
-      // Clamp the budget that scales the agent fan-out (public endpoint).
+      // Clamp the budget that scales the agent fan-out (public endpoint). The paid
+      // /api/research/x402 toll-booth is where large budgets belong, not the free tier.
       rootBudgetUSDC:
         typeof body.rootBudgetUSDC === "number"
-          ? Math.min(1000, Math.max(0, body.rootBudgetUSDC))
+          ? Math.min(2, Math.max(0, body.rootBudgetUSDC))
           : undefined,
       excludeIds: Array.isArray(body.excludeIds)
         ? body.excludeIds.filter((x) => typeof x === "string").slice(0, 200)

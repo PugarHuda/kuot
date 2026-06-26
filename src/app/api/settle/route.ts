@@ -4,6 +4,7 @@ import { escrowUnclaimed } from "@/lib/escrow";
 import { commitGrounding, identityHash } from "@/lib/grounding";
 import { arcTestnet } from "@/lib/chains";
 import { devTokenOk } from "@/lib/authz";
+import { agentWalletPayout } from "@/lib/agent-wallet";
 import type { CitationPayout } from "@/lib/agent";
 
 const ARC_TX = (h: string) => `https://testnet.arcscan.app/tx/${h}`;
@@ -154,6 +155,18 @@ export async function POST(req: Request) {
       }
     }
 
+    // Autonomous Agent-Wallet payout: the agent pays its TOP-weighted source directly
+    // from its own Circle Agent Wallet (developer-controlled) — a real in-loop wallet
+    // settlement. Best-effort + self-capped; never blocks the on-chain attest.
+    let agentWallet = null;
+    if (total > 0n) {
+      const top = [...body.payouts].sort((a, b) => b.weightBps - a.weightBps)[0];
+      if (top) {
+        const share = (Number(total) / 1e6) * (top.weightBps / 10_000);
+        agentWallet = await agentWalletPayout(top.author as `0x${string}`, share);
+      }
+    }
+
     return NextResponse.json({
       mode: "attested",
       queryId,
@@ -162,6 +175,7 @@ export async function POST(req: Request) {
       chain: arcTestnet.name,
       grounding: groundingTx ? { txHash: groundingTx, explorer: ARC_TX(groundingTx) } : null,
       escrow,
+      agentWallet,
     });
   } catch (e) {
     return NextResponse.json(
