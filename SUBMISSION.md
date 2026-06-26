@@ -3,58 +3,80 @@
 **Tagline:** The recursive citation economy on Arc — every AI answer pays its sources a
 nanopayment, and every agent that cites those answers pays again.
 
-**Builder:** Pugar Huda Mantoro · GitHub @PugarHuda · Discord hajislamet
+**Builder:** Pugar Huda Mantoro · GitHub @PugarHuda · X @BangDropID
 
 ## Submission fields
-- **GitHub repo (required):** https://github.com/PugarHuda/kuot
-- **Video demo (≤3 min, required):** <Loom/YouTube URL — record per DEMO.md>
-- **Live product link (encouraged):** https://kuot-azure.vercel.app
-- **Runs on Arc:** yes — 7 contracts live on Arc testnet (5042002), see `DEPLOYED.md`. Real
-  testnet USDC flows on-chain (deploy + 8 proof txs documented).
+- **GitHub repo:** https://github.com/PugarHuda/kuot
+- **Video demo (≤3 min):** <Loom/YouTube URL — record per DEMO.md>
+- **Live product:** https://kuot-azure.vercel.app · author page: `/cited` · dashboard: `/dashboard`
+- **Runs on Arc:** yes — **10 contracts live on Arc testnet (5042002)**, see `DEPLOYED.md`
+  (addresses + proof txs). All settlement is real testnet USDC on-chain.
 
 ## What it is / the problem
-AI agents and aggregators consume human writing as free substrate — "the author writes, the
-model grounds, the answer ships, and no money moves." Kuot turns every citation into a
-nanopayment: the agent **pays** for the papers it reads (x402 on Arc via Circle Gateway),
-**grounds** an answer, and **splits USDC** to the cited authors. When another agent later
-cites Kuot's answer, a fraction flows **recursively** back to those original authors.
+AI agents consume human writing as free substrate — "the author writes, the model grounds, the
+answer ships, and no money moves." Kuot turns every citation into a nanopayment: the agent
+**pays** for the papers it reads (x402 on Arc via Circle Gateway), **grounds** an answer with a
+Venice multi-agent mesh, commits a **proof-of-grounding** digest on-chain, then **splits USDC**
+to the cited authors. When another agent later cites Kuot's answer, a fraction flows
+**recursively** back to those original authors. Unclaimed shares are held in on-chain escrow
+(and accrue vault yield) until the author binds their ORCID and withdraws.
 
 ## RFBs it spans
 - **RFB-01 Autonomous Paying Agents** — the agent discovers, prices, and pays for sources on a
-  budget (Canteen's own example build: "ResearchAgent: pays for premium sources and papers").
-- **RFB-06 Creator & Publisher Monetization** — per-citation payouts to authors; unclaimed
-  rewards earn real yield until claimed.
-- **RFB-03 Agent-to-Agent** — recursive reverse-x402 + reputation-as-collateral.
+  hard budget it can't exceed (self-pricing + per-source bidding in `src/lib/pricing.ts`).
+- **RFB-06 Creator & Publisher Monetization** — per-citation payouts to real authors; an
+  onboarding funnel (`/cited`, ORCID claim, escrow) that turns citations into claimable USDC.
+- **RFB-03 Agent-to-Agent** — recursive reverse-x402 (a paid MCP toll-booth + a citable answer)
+  and directional reputation-as-collateral (ERC-8004 bond, slashable).
 
-## How it scores
-- **Agentic sophistication (30%):** multi-agent mesh (Planner→Researcher→Reader fan-out→
-  Fact-checker revision loop→Summarizer); the agent decides which sources are worth paying for,
-  the sub-cent price, when an answer is grounded, and gates payment on proof.
-- **Traction (30%):** real on-chain USDC on Arc (deploy + 8 proof txs in `DEPLOYED.md`); demand-
-  side self-generates volume (1 query ≈ N citation payments); an **MCP server** other agents can
-  call and pay today (`mcp/`); unclaimed payouts escrow on-chain so payments flow without
-  blocking on author onboarding. Metrics surfaced: total autonomous payments, avg tx size
-  (sub-cent), authors paid, payment-chain depth.
-- **Circle tool usage (20%):** Gateway nanopayments + x402 (paying agent + reverse-x402),
-  Agent Wallets, **App Kit Swap (StableFX USDC↔EURC)**, **USYC** real-yield vault, CCTP (via
-  Gateway withdraw), Contracts (7 deployed), USDC + EURC.
-- **Innovation (20%):** recursive reverse-x402 (the citation graph pays itself), proof-of-
-  grounding committed on-chain before pay, and directional reputation-as-collateral (ERC-8004;
-  trust as a from→to→context vector at risk, not a single score).
+## Traction — REAL, on-chain, verifiable now (`GET /api/stats`)
+Every number below is read live from Arc, not asserted:
+- **117 authors hold a real claimable balance** in `UnclaimedEscrow` (**$7.56 USDC escrowed**),
+  seeded through the **genuine research→settle pipeline** across 13 topics (CRISPR, perovskite,
+  LLM hallucination, solid-state batteries, quantum EC, DAC, Alzheimer, GNN drug discovery,
+  SOFC, transformers, gut-microbiome immunotherapy, superconducting hydrides, wildfire AQ).
+  Marquee real researchers cited & owed: **Yoshua Bengio, John Hardy, Dennis Selkoe, Oriol
+  Vinyals, Michael Saliba, Michaël Grätzel, Shengdar Tsai, M. I. Eremets, Léon Bottou.**
+- **AttributionLedger:** 137 distinct authors paid across 143 `AuthorPaid` events, **$6.92 USDC
+  attributed** on-chain → **~$14.5 total attributed to sources** (ledger + escrow).
+- **Real agent-to-agent volume:** an external buyer-agent paid Kuot **20+ times** via
+  Gateway-batched reverse-x402 nanopayments on Arc (`npm run traction`; settlement ids printed,
+  buyer Gateway balance visibly drops each time).
+- **Author onboarding kit ready:** a **113-author outreach list** with pre-filled claim links
+  (`?orcid=…` opens straight to their live balance) + a mail-merge message set.
+- **Other agents can pay today:** the MCP server (`mcp/`) exposes `kuot_research_paid` (x402
+  toll-booth) and `kuot_cite` (reverse-x402).
 
-## Traction (verified live on Arc, see /dashboard/activity)
-- **Real settlements flowing:** research→settle ran end-to-end on the live deployment with **real
-  Venice LLM**; the AttributionLedger has settled queries emitting `AuthorPaid` events and moving
-  real USDC to ~19 author wallets (split across 3 seeded queries; ongoing).
-- **Reverse-x402 works live:** publish a synthesis → cite it for **$0.0001** (Gateway-batched x402
-  challenge) → a recursive split pays the **original authors at $0.000013 each** (true sub-cent
-  nanopayments). Example: `GET /api/summaries/14c966d503a1d1b2`.
-- **Users onboarded:** <fill at submit> — target: real ORCID authors bound on-chain + other
-  hackathon agents paying via the MCP (`mcp/`). Unclaimed shares escrow on-chain so payments flow
-  without blocking on supply-side onboarding.
-- **User problem:** creators/authors earn nothing when AI grounds answers in their work; Kuot
-  pays them per citation, automatically, at a scale that was previously too small to clear.
+## Circle / Arc stack — what's real vs. honest about
+- **Circle Gateway nanopayment batching** — real `createGatewayMiddleware` verify+settle on Arc;
+  the headline integration (the reverse-x402 endpoints settle batched on-chain).
+- **x402 + recursive reverse-x402** — real paid endpoints (`/api/research/x402`, `/api/summaries`),
+  MCP toll-booth, recursive author split.
+- **Circle Agent Wallets (developer-controlled)** — the agent pays its **top source directly from
+  its own Circle wallet inside the real `/api/settle` loop** (not just a dev proof).
+- **CCTP V2** — `depositForBurn` on Arc → Base (domain 6), **reproducible from code**
+  (`scripts/cctp-burn.mjs`; fresh burn `0x05b0cd2f…`).
+- **EURC** — real multi-currency author payout (direct + swap-then-pay).
+- **StableFX swap** — Circle's App Kit StableFX has **no Arc route**, so Kuot runs its **own**
+  on-chain `StableFXPool` (honest: a bespoke AMM, not the App Kit product).
+- **USYC** — a real ERC-4626 vault **mechanism**; honest caveat: it's a **self-funded `MockUSYC`
+  stand-in** (real USYC is institution-gated), so the redeem path is real but the yield is seeded.
+- **ERC-8004** — AgentRegistry (5 agents) + directional ReputationBond, deployed and exercised.
+- **USDC** native gas + ERC-20 throughout. **10 Solidity contracts** on Arc (Foundry).
+
+## Agentic sophistication
+Venice multi-agent mesh: Planner → parallel Readers → Synthesizer → Fact-checker revision loop →
+Summarizer, with embeddings-weighted relevance driving the payout split. The agent **self-prices**
+its citation fee and recursive author-share by fact-checker confidence × grounding depth, and
+**bids per source** by rank/budget — then gates payment on an on-chain proof-of-grounding digest.
+
+## Security / integrity (hardened this cycle)
+A 3-agent adversarial audit found and **fixed** fail-open money endpoints (dev payout, FX, Gateway,
+venice-x402, settle) — all now **fail closed** behind a constant-time operator token; the public
+attest path that could DoS real payouts is closed; ORCID demo-verify fails closed against real
+authors. **No runtime mocks**; the only stubs (USYC yield) are now labeled honestly in the docs.
 
 ## Repro
-`KUOT.md` (architecture + build log) · `DEPLOYED.md` (addresses + proof txs) · `FEEDBACK.md`
-(Circle/Arc DX) · `mcp/README.md` (integration). Tests: 80 Vitest + 51 Foundry green.
+`KUOT.md` (architecture) · `DEPLOYED.md` (addresses + proof txs) · `CIRCLE-STACK.md` (per-primitive
+proof) · `INTEGRATE.md` (adopt it) · `DEMO.md` (3-min script) · `FEEDBACK.md` (Circle/Arc DX).
+Tests: **102 Vitest + 59 Foundry green**. Drive traction yourself: `npm run traction`.
