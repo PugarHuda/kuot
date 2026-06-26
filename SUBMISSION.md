@@ -31,19 +31,21 @@ to the cited authors. When another agent later cites Kuot's answer, a fraction f
 
 ## Traction — REAL, on-chain, verifiable now (`GET /api/stats`)
 Every number below is read live from Arc, not asserted:
-- **117 authors hold a real claimable balance** in `UnclaimedEscrow` (**$7.56 USDC escrowed**),
-  seeded through the **genuine research→settle pipeline** across 13 topics (CRISPR, perovskite,
-  LLM hallucination, solid-state batteries, quantum EC, DAC, Alzheimer, GNN drug discovery,
-  SOFC, transformers, gut-microbiome immunotherapy, superconducting hydrides, wildfire AQ).
+- **~200 authors hold a real claimable balance** in `UnclaimedEscrow` (**$10.6 USDC escrowed**),
+  seeded through the **genuine research→settle pipeline** across 25 topics (CRISPR/prime editing,
+  perovskite, LLM hallucination, solid-state & Li-S batteries, quantum EC, DAC, Alzheimer, GNN/ML
+  drug discovery & protein folding, SOFC, transformers, gut-microbiome immunotherapy, superconducting
+  hydrides, wildfire AQ, fusion, scRNA atlas, perovskite LEDs, coral bleaching, neuromorphic…).
   Marquee real researchers cited & owed: **Yoshua Bengio, John Hardy, Dennis Selkoe, Oriol
   Vinyals, Michael Saliba, Michaël Grätzel, Shengdar Tsai, M. I. Eremets, Léon Bottou.**
-- **AttributionLedger:** 137 distinct authors paid across 143 `AuthorPaid` events, **$6.92 USDC
-  attributed** on-chain → **~$14.5 total attributed to sources** (ledger + escrow).
+- **AttributionLedger:** 233 distinct authors paid across 239 `AuthorPaid` events, **$10.5 USDC
+  attributed** on-chain → **~$21 total attributed to sources** (ledger + escrow).
 - **Real agent-to-agent volume:** an external buyer-agent paid Kuot **20+ times** via
   Gateway-batched reverse-x402 nanopayments on Arc (`npm run traction`; settlement ids printed,
   buyer Gateway balance visibly drops each time).
-- **Author onboarding kit ready:** a **113-author outreach list** with pre-filled claim links
-  (`?orcid=…` opens straight to their live balance) + a mail-merge message set.
+- **ORCID claim rail LIVE:** real ORCID OAuth is wired (`/dashboard/claim` → "Verify with ORCID"),
+  and the on-chain bind→withdraw is proven (`scripts/prove-claim.mjs`). A **~190-author outreach
+  list** with pre-filled claim links (`?orcid=…` opens straight to their live balance) + mail-merge.
 - **Other agents can pay today:** the MCP server (`mcp/`) exposes `kuot_research_paid` (x402
   toll-booth) and `kuot_cite` (reverse-x402).
 
