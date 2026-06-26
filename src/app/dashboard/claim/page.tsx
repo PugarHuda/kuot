@@ -45,9 +45,25 @@ export default function ClaimPage() {
 
   // Referral pre-fill: a shareable claim link like /dashboard/claim?orcid=0000-0001-...
   // lands the author with their ORCID already filled in — frictionless onboarding.
+  const [verifyErr, setVerifyErr] = useState<string | null>(null);
   useEffect(() => {
-    const o = new URLSearchParams(window.location.search).get("orcid");
+    const q = new URLSearchParams(window.location.search);
+    const o = q.get("orcid");
     if (o && /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/i.test(o.trim())) setOrcid(o.trim());
+    // Honest dead-end messaging so a real researcher who hit "Demo verify" (which
+    // only accepts the ORCID test record / non-real iDs) isn't silently bounced.
+    const errMap: Record<string, string> = {
+      demo_real_orcid:
+        "That's a real ORCID iD — for your security it can only be verified by signing in with ORCID itself, not the demo path. The official “Verify with ORCID” sign-in is being switched on; check back shortly or email us and we'll bind it for you.",
+      demo_bad_orcid: "That doesn't look like a valid ORCID iD (format 0000-0002-1825-0097).",
+      oauth_disabled: "ORCID sign-in isn't switched on yet. It's being enabled — check back shortly.",
+      oauth_state: "Your ORCID sign-in session expired. Please try “Verify with ORCID” again.",
+      oauth_orcid_mismatch: `The ORCID you signed in with (${q.get("got") ?? "?"}) doesn't match the one entered.`,
+      oauth_exchange: "ORCID sign-in failed to complete. Please try again.",
+      demo_disabled: "Demo verification is disabled in this environment.",
+    };
+    const e = q.get("err");
+    if (e && errMap[e]) setVerifyErr(errMap[e]);
   }, []);
 
   // Live onboarding/traction counter for the campaign.
@@ -240,6 +256,11 @@ export default function ClaimPage() {
               </span>
             ) : null}
           </div>
+          {verifyErr ? (
+            <p className="mt-2 rounded-md border border-amber-300 bg-amber-50 p-2.5 text-[11px] leading-relaxed text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
+              {verifyErr}
+            </p>
+          ) : null}
         </div>
 
         {/* 3. sign + bind */}
