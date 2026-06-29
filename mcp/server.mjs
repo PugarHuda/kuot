@@ -90,7 +90,8 @@ server.registerTool(
     description:
       "Fetch a stored Kuot synthesis to cite it. This is a paid resource (Circle Gateway batched x402 on Arc): " +
       "a fraction of the payment flows recursively back to the original authors. Without payment you get the 402 " +
-      "challenge (price + pay-to); a GatewayClient can then pay and re-fetch.",
+      "challenge (price + pay-to); a GatewayClient can then pay and re-fetch. Or pay on-chain directly — send a " +
+      "USDC transfer to the seller (pay-to) on Arc and pass its tx hash as paymentSignature (works even if Circle's facilitator is down).",
     inputSchema: {
       queryId: z.string().describe("the queryId of the Kuot synthesis to cite"),
       paymentSignature: z.string().optional().describe("X-PAYMENT / Payment-Signature header value, if already paid"),

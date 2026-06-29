@@ -7,7 +7,7 @@ Every Circle/Arc primitive Kuot uses, with a real on-chain / API proof. All on *
 |---|---|---|
 | **Arc L1** | Every contract + settlement lives here; gas paid in USDC, sub-second finality | 11 contracts deployed (below) |
 | **Circle Gateway — nanopayments (batched)** | Reverse-x402 cite settled via `createGatewayMiddleware` verify+settle; gas-free batched | settlement `0c53ea2c-…`, buyer Gateway balance `0.9999 → 0.9998` |
-| **x402** | Agent pays papers + reverse-x402 (cite Kuot); 402 challenge → PAYMENT-REQUIRED → settle | reverse-x402 `/api/summaries/14c966d503a1d1b2` → 402 + recursive split |
+| **x402** | Agent pays papers + reverse-x402 (cite Kuot); 402 → PAYMENT-REQUIRED → settle. Settles via Circle Gateway OR a **pure on-chain fallback** (a USDC transfer tx hash to the seller on Arc, verified directly — no Circle-API dependency) | reverse-x402 `/api/summaries/…` → 402 + recursive split; on-chain settle proven tx `0xe8cb521a…` (200, `via:arc-direct`, 8 recursive authors) |
 | **Circle Agent Wallets** (developer-controlled) | The agent has its own Circle wallet that **pays authors** via `createTransaction` | wallet `0x69906004…7cea`, tx `ab38c82f-f8ae-5873-921a-7360c7583cb1` (0.05 USDC) |
 | **CCTP V2** | Cross-chain USDC round-trip **proven end-to-end**: `depositForBurn` on Arc (domain 26→6) → Circle attestation → `receiveMessage` mint on Base. `node scripts/cctp-burn.mjs` + `cctp-mint.mjs` | burn `0x05b0cd2f…424ccd` (Arc) → **mint `0x62f3fabe1c9f4c425bcc9c83187b06ab8eb3ae634889b51315fdc2ab27dfbdcc` (Base Sepolia, success)** |
 | **USDC** | Native gas (18-dec) + ERC-20 payments (6-dec) throughout | all txs |
