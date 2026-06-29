@@ -190,10 +190,10 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
         <Kicker>It&apos;s all real</Kicker>
         <h2 className="serif mt-4 text-4xl font-semibold leading-tight">No mocks in the critical path.</h2>
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat v="8" k="contracts live" />
-          <Stat v="131" k="tests green" />
+          <Stat v="11" k="contracts live" />
+          <Stat v="161" k="tests green" />
           <Stat v="5" k="on-chain agents" />
-          <Stat v="19" k="author payouts" />
+          <Stat v="285" k="authors paid" />
         </div>
         <p className="mt-6 text-sm text-[var(--ink)]/75">
           Circle Gateway Gateway-batched relay on Base:{" "}

@@ -53,15 +53,24 @@ export async function payForResource(payTo: Address, amount6: bigint): Promise<`
   });
 }
 
-/** Verify on-chain that `txHash` is a confirmed USDC Transfer to `payTo` >= `amount6`. */
+/**
+ * Verify on-chain that `txHash` is a RECENT, confirmed USDC Transfer to `payTo`
+ * of >= `amount6`. The recency window stops an attacker from replaying an old
+ * historical transfer to `payTo` as if it paid for this request. (A bare
+ * amount-to-address check is also reusable; serverless single-use needs a shared
+ * store — production binds an EIP-3009 authorization nonce minted in the 402.)
+ */
 export async function verifyPayment(
   txHash: `0x${string}`,
   payTo: Address,
   amount6: bigint,
+  maxAgeSec = 900,
 ): Promise<boolean> {
   try {
     const receipt = await pub().getTransactionReceipt({ hash: txHash });
     if (receipt.status !== "success") return false;
+    const block = await pub().getBlock({ blockNumber: receipt.blockNumber });
+    if (Math.floor(Date.now() / 1000) - Number(block.timestamp) > maxAgeSec) return false;
     const usdc = usdcAddress().toLowerCase();
     for (const log of receipt.logs) {
       if (log.address.toLowerCase() !== usdc) continue;

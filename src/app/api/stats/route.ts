@@ -9,6 +9,9 @@ export const dynamic = "force-dynamic";
 const LEDGER = process.env.NEXT_PUBLIC_ATTRIBUTION_LEDGER as Address | undefined;
 const NAME_REGISTRY = process.env.NEXT_PUBLIC_NAME_REGISTRY as Address | undefined;
 const ESCROW = process.env.NEXT_PUBLIC_UNCLAIMED_ESCROW as Address | undefined;
+// Only the operator legitimately attests; ignore spoofed permissionless attest()
+// calls so the traction snapshot can't be inflated by a stranger. See /api/activity.
+const OPERATOR = (process.env.NEXT_PUBLIC_SESSION_ACCOUNT ?? "").toLowerCase();
 
 const QUERY_ATTESTED = parseAbiItem(
   "event QueryAttested(bytes32 indexed queryId, address indexed payer, uint256 total, uint256 citationCount)",
@@ -52,8 +55,12 @@ export async function GET() {
         for (const l of logs) m.set(`${l.transactionHash}:${l.logIndex}`, l);
         return [...m.values()];
       };
-      const attested = dedup(chunks.flatMap((c) => c[0]));
-      const paid = dedup(chunks.flatMap((c) => c[1]));
+      const attestedAll = dedup(chunks.flatMap((c) => c[0]));
+      const paidAll = dedup(chunks.flatMap((c) => c[1]));
+      // Trust only operator-signed attestations; drop spoofed attest() entries.
+      const attested = OPERATOR ? attestedAll.filter((l) => String(l.args.payer).toLowerCase() === OPERATOR) : attestedAll;
+      const legitQueries = new Set(attested.map((l) => String(l.args.queryId)));
+      const paid = OPERATOR ? paidAll.filter((l) => legitQueries.has(String(l.args.queryId))) : paidAll;
       attestations = attested.length;
       authorPayouts = paid.length;
       // Sum in bigint (no float drift / precision loss), divide once at the end.

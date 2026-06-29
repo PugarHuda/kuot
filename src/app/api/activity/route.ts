@@ -6,6 +6,12 @@ import { ledgerRanges } from "@/lib/logs";
 export const runtime = "nodejs";
 
 const LEDGER = process.env.NEXT_PUBLIC_ATTRIBUTION_LEDGER as Address | undefined;
+// AttributionLedger.attest() is permissionless on-chain (anyone can emit AuthorPaid
+// without moving USDC). The operator is the only LEGIT attester, so the indexer is
+// the trust boundary: only count attestations whose payer == operator, dropping any
+// spoofed leaderboard entries. (queryId-scoped: AuthorPaid carries no payer, but its
+// queryId must come from an operator-signed QueryAttested.)
+const OPERATOR = (process.env.NEXT_PUBLIC_SESSION_ACCOUNT ?? "").toLowerCase();
 const QUERY_ATTESTED = parseAbiItem(
   "event QueryAttested(bytes32 indexed queryId, address indexed payer, uint256 total, uint256 citationCount)",
 );
@@ -32,8 +38,15 @@ export async function GET() {
         ]),
       ),
     );
-    const attested = chunks.flatMap((c) => c[0]);
-    const paid = chunks.flatMap((c) => c[1]);
+    const allAttested = chunks.flatMap((c) => c[0]);
+    const allPaid = chunks.flatMap((c) => c[1]);
+
+    // Trust only operator-signed attestations (drop spoofed attest() calls).
+    const attested = OPERATOR
+      ? allAttested.filter((l) => (l.args.payer as string).toLowerCase() === OPERATOR)
+      : allAttested;
+    const legitQueries = new Set(attested.map((l) => l.args.queryId as string));
+    const paid = OPERATOR ? allPaid.filter((l) => legitQueries.has(l.args.queryId as string)) : allPaid;
 
     // Per-query author counts.
     const authorsByQuery = new Map<string, number>();

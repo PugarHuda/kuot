@@ -44,7 +44,7 @@ Built for the **Lepton Agents Hackathon — Canteen × Circle × Arc** (June 202
 
 ## Circle / Arc stack
 Gateway nanopayments · x402 · Agent Wallets · StableFX swap (on-chain USDC↔EURC) · USYC · CCTP ·
-Contracts · USDC + EURC. **10 contracts live on Arc testnet** (5042002) — see `DEPLOYED.md` for
+Contracts · USDC + EURC. **11 contracts live on Arc testnet** (5042002) — see `DEPLOYED.md` for
 addresses + the on-chain proof transactions.
 
 ## Architecture

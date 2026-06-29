@@ -9,7 +9,7 @@ nanopayment, and every agent that cites those answers pays again.
 - **GitHub repo:** https://github.com/PugarHuda/kuot
 - **Video demo (≤3 min):** <Loom/YouTube URL — record per DEMO.md>
 - **Live product:** https://kuot-azure.vercel.app · author page: `/cited` · dashboard: `/dashboard`
-- **Runs on Arc:** yes — **10 contracts live on Arc testnet (5042002)**, see `DEPLOYED.md`
+- **Runs on Arc:** yes — **11 contracts live on Arc testnet (5042002)**, see `DEPLOYED.md`
   (addresses + proof txs). All settlement is real testnet USDC on-chain.
 
 ## What it is / the problem

@@ -3,6 +3,7 @@ import { decodeDelegations } from "@metamask/smart-accounts-kit/utils";
 import { verifyPayment, networkToChainId } from "@/lib/facilitator";
 import { send7710Transaction, toRelayerJson, type Execution7710 } from "@/lib/oneshot";
 import type { PaymentPayload, PaymentRequirements } from "@/lib/x402";
+import { rateLimit, clientIp } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -16,6 +17,16 @@ export const maxDuration = 60;
  * (gas paid in stablecoin). Returns the relayer TaskId for status tracking.
  */
 export async function POST(req: Request) {
+  // A facilitator is callable by any payer, but each call relays through the
+  // operator's 1Shot/Gateway credentials (real budget). Throttle per-IP so a
+  // stranger can't drain that budget with arbitrary payloads (confused-deputy DoS).
+  const rl = rateLimit(`facilitator:${clientIp(req)}`, 12, 60_000);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { success: false, errorReason: "rate_limited", retryAfter: rl.retryAfter },
+      { status: 429, headers: { "retry-after": String(rl.retryAfter) } },
+    );
+  }
   let body: { paymentPayload?: PaymentPayload; paymentRequirements?: PaymentRequirements };
   try {
     body = await req.json();

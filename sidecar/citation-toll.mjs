@@ -56,17 +56,32 @@ function challenge(resource) {
   };
 }
 
-/** Verify on-chain that txHash is a confirmed USDC Transfer to PAY_TO >= price. */
+// A bare "USDC Transfer to payTo >= price" check is replayable (the txHash is
+// shareable) and bypassable with any historical transfer to payTo. So require the
+// payment to be SINGLE-USE (redeemed at most once) and RECENT (within the window),
+// so an attacker can neither reuse a fresh payment nor replay an old transfer.
+// (Production-grade binding = an EIP-3009 authorization carrying a server nonce.)
+const spent = new Set();
+const MAX_AGE_SEC = Number(process.env.PAYMENT_MAX_AGE_SEC ?? 600);
+
+/** Verify on-chain that txHash is a recent, unredeemed USDC Transfer to PAY_TO >= price. */
 async function verifyPayment(txHash) {
   if (!/^0x[0-9a-fA-F]{64}$/.test(txHash)) return false;
+  if (spent.has(txHash.toLowerCase())) return false; // single-use
   try {
     const receipt = await pub.getTransactionReceipt({ hash: txHash });
     if (receipt.status !== "success") return false;
+    const block = await pub.getBlock({ blockNumber: receipt.blockNumber });
+    const now = Math.floor(Date.now() / 1000);
+    if (now - Number(block.timestamp) > MAX_AGE_SEC) return false; // too old to be this request's payment
     for (const log of receipt.logs) {
       if (log.address.toLowerCase() !== USDC.toLowerCase()) continue;
       try {
         const ev = decodeEventLog({ abi: erc20Abi, data: log.data, topics: log.topics });
-        if (ev.eventName === "Transfer" && getAddress(ev.args.to) === PAY_TO && ev.args.value >= PRICE_USDC6) return true;
+        if (ev.eventName === "Transfer" && getAddress(ev.args.to) === PAY_TO && ev.args.value >= PRICE_USDC6) {
+          spent.add(txHash.toLowerCase());
+          return true;
+        }
       } catch { /* not a Transfer */ }
     }
     return false;
