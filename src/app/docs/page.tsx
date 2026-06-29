@@ -7,13 +7,16 @@ export const metadata = {
 
 const SCAN = "https://testnet.arcscan.app/address/";
 const CONTRACTS: [string, string, string][] = [
-  ["AttributionLedger", "0xE92254E3722D190ffC77C0aCa6856610708b9246", "Records each citation attestation + splits USDC to authors"],
-  ["NameRegistry", "0xE9DC8a36e8f14c85E687eEe26978692dA98cbeab", "Binds ORCID/OpenAlex identity → real author wallet"],
-  ["UnclaimedEscrow", "0x851C251411Fe4F4bab586F775c7450f86A348EAD", "Holds unclaimed authors' shares until they claim"],
-  ["AgentRegistry8004", "0x05465b9887D7952fAC76DF42D193aae55EbA5891", "ERC-8004 identity + reputation for the 5 agents"],
-  ["BountyMarket", "0xeC274B5B770e24B0Aef8aF75EAAa7fC9CF7DF5c6", "Sponsor a topic; settled USDC pays the cited authors"],
-  ["ShareRegistry", "0x52759E09d3C70ca281c59da3122a7AF8dFA51847", "Publishes results on-chain for public /r/<id> share links"],
-  ["CitationYield", "0x3Fdf80368d464078a4733B3b264457D009E5cfA3", "12% APR loyalty yield on rewards left unclaimed"],
+  ["AttributionLedger", "0x6a1AB9C4Cfd7bd65397DC5dDa92d19fA8D49173e", "Records each citation attestation + splits USDC to authors"],
+  ["NameRegistry", "0x4bc59e385Be039C42eB32f00C473a8e1B1a76E1C", "Binds ORCID/OpenAlex identity → real author wallet"],
+  ["UnclaimedEscrow", "0xf7E7c1619F9C5F3cDcCd1B209fdE0AedA4025812", "Holds unclaimed authors' shares until they claim"],
+  ["GroundingRegistry", "0x18FfEEbb779eDF44733C8EFcefeF70fB929636D1", "Commits a tamper-evident digest of each grounded answer"],
+  ["ReputationBond", "0xEBfe7B62cC6e383551c61d13437157E0Fe46f463", "Directional trust bond — capital staked behind a citation, slashable"],
+  ["AgentRegistry8004", "0x53aaF8397E518f2529e1682b9A03D73537B23f9d", "ERC-8004 identity + reputation for the 5 agents"],
+  ["StableFXPool", "0x3B95B94BE1F0cAE3CFF64Ebdc82cB9397deDCEff", "On-chain USDC↔EURC swap so EU authors can take EURC"],
+  ["MockUSYC", "0xEe59BD14b54F48D769032c0950a773d41E12115d", "ERC-4626 yield vault (USYC-style stand-in on testnet)"],
+  ["CitationYieldUSYC", "0x9E48A2D1501A1DB6A77b7bb325B2C22070be28d8", "Routes unclaimed rewards into the vault; redeem principal + yield"],
+  ["ShareRegistry", "0x25BC0d7eA9B574CF47D7018cfBc5a1627F3227Df", "Publishes results on-chain for public /r/<id> share links + reverse-x402"],
 ];
 const ENDPOINTS: [string, string][] = [
   ["POST /api/research", "Run the agent mesh → synthesis + payout plan + agent trace"],
@@ -126,8 +129,10 @@ export default function Docs() {
           <p className="mt-3 text-sm leading-relaxed text-[var(--ink)]/80">
             Cited authors who haven&apos;t claimed a wallet have their share recorded on-chain in
             UnclaimedEscrow, keyed by identity. It <b>accumulates</b> every time the agent cites them again
-            — and accrues a <b>12% APR citation-loyalty yield</b> (CitationYield, protocol-funded) the
-            longer it stays unclaimed. To claim, an author proves their ORCID (OAuth) + signs once; the
+            — and the unclaimed share sits in a real <b>ERC-4626 vault</b> (CitationYieldUSYC) that accrues
+            yield the longer it stays unclaimed. On testnet this is a USYC-style stand-in (real USYC is
+            institution-gated), so the yield is seeded, not from treasuries — but the deposit/redeem path is
+            real on-chain. To claim, an author proves their ORCID (OAuth) + signs once; the
             operator relays the binding (zero gas for the author), then they withdraw principal + bonus.
           </p>
 
@@ -173,7 +178,7 @@ export default function Docs() {
           </ul>
           <p className="mt-3 text-sm text-[var(--ink)]/70">
             Plus live attestations on the <Link href="/dashboard/activity" className="link-accent">Activity</Link> page,
-            real <code>attestAndSplit</code> USDC transfers, and the x402 + Gateway facilitator. 131 tests (51 Foundry + 80 Vitest), no mocks in the critical path.
+            real <code>attestAndSplit</code> USDC transfers, and the x402 + Gateway facilitator. 161 tests (59 Foundry + 102 Vitest), no mocks in the critical path.
           </p>
 
           <H id="tech">Tech &amp; tracks</H>

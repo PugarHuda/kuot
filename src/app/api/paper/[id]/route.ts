@@ -51,13 +51,55 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     return NextResponse.json({ error: "payment not verified on-chain" }, { status: 402 });
   }
 
+  // Real content, not a canned string: fetch the actual OpenAlex work the agent
+  // paid to read (id is an OpenAlex work id / DOI). Abstract is reconstructed
+  // from OpenAlex's inverted index.
+  const paper = await fetchOpenAlexWork(id);
   return NextResponse.json(
     {
       id,
-      fullText: `Full text of paper ${id}. (Unlocked via x402 — on-chain USDC payment verified.)`,
+      ...paper,
       paid: `${Number(PRICE_USDC_6) / 1e6} USDC`,
       txHash,
     },
     { status: 200, headers: { "X-PAYMENT-RESPONSE": "verified" } },
   );
+}
+
+/** Reconstruct an abstract from OpenAlex's inverted index. */
+function deinvert(idx?: Record<string, number[]> | null): string {
+  if (!idx || typeof idx !== "object") return "";
+  const words: string[] = [];
+  for (const [word, positions] of Object.entries(idx)) {
+    if (!Array.isArray(positions)) continue;
+    for (const p of positions) words[p] = word;
+  }
+  return words.join(" ");
+}
+
+async function fetchOpenAlexWork(id: string) {
+  // OpenAlex accepts a bare work id, a full URL, or a DOI in the path.
+  const key = id.startsWith("http") || id.startsWith("10.") ? id : `https://openalex.org/${id}`;
+  try {
+    const res = await fetch(`https://api.openalex.org/works/${encodeURIComponent(key)}`, {
+      headers: { "User-Agent": "kuot (hudapugar@gmail.com)" },
+    });
+    if (!res.ok) return { error: `paper not found in OpenAlex (${res.status})` };
+    const w = (await res.json()) as {
+      title?: string | null;
+      publication_year?: number;
+      doi?: string | null;
+      abstract_inverted_index?: Record<string, number[]> | null;
+      authorships?: { author?: { display_name?: string } }[];
+    };
+    return {
+      title: w.title ?? null,
+      year: w.publication_year ?? null,
+      doi: w.doi ?? null,
+      authors: (w.authorships ?? []).map((a) => a.author?.display_name).filter(Boolean),
+      abstract: deinvert(w.abstract_inverted_index),
+    };
+  } catch (e) {
+    return { error: `OpenAlex fetch failed: ${String(e)}` };
+  }
 }

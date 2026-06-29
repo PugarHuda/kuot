@@ -289,7 +289,7 @@ const NARRATION: Record<string, string> = {
   settlement:
     "Unclaimed shares aren't idle — they earn real treasury yield in a U.S.Y.C. vault until the author claims with their ORCID. And reputation is staked as collateral, slashable on a false citation. Real stakes, not a number you ask to be trusted.",
   proof:
-    "And it's all real. No mocks in the critical path. Eight contracts live on Arc, a hundred and thirty-one tests green, real U.S.D.C. flowing, and a real Circle Gateway batched settlement on chain.",
+    "And it's all real. No mocks in the critical path. Ten contracts live on Arc, a hundred and sixty-one tests green, real U.S.D.C. flowing, and a real Circle Gateway batched settlement on chain.",
   tracks:
     "And here's the headline. Kuot's own answers are a paid resource. When another agent cites Kuot, a fraction of that nanopayment flows recursively back to the original authors — the citation graph pays itself, depth after depth. It spans Autonomous Paying Agents, Creator Monetization, and Agent-to-Agent networks.",
   demo:

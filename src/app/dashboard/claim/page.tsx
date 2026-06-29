@@ -331,7 +331,7 @@ export default function ClaimPage() {
                   <span className="text-xs font-medium">
                     ⏳ Citation-loyalty yield{" "}
                     <span className="rounded bg-[var(--accent-soft)] px-1.5 py-0.5 text-[10px] text-[var(--accent)]">
-                      {(bonus.apyBps / 100).toFixed(0)}% APR
+                      USYC-style vault · testnet
                     </span>
                   </span>
                   <LiveYield
@@ -343,12 +343,10 @@ export default function ClaimPage() {
                   />
                 </div>
                 <p className="mt-1 text-[11px] text-neutral-500">
-                  A protocol-funded bonus that accrues live, every second, the longer your rewards
-                  stay unclaimed — real passive earning while you wait
-                  {Number(bonus.principalUSDC6) > 0
-                    ? ` (≈ ${((Number(bonus.principalUSDC6) / 1e6) * (bonus.apyBps / 10000)).toFixed(4)} USDC/year on your ${(Number(bonus.principalUSDC6) / 1e6).toFixed(2)} USDC)`
-                    : ""}
-                  . {bonus.claimed ? "Already claimed." : "Claim it any time."}
+                  Your unclaimed share sits in a real ERC-4626 vault and earns the vault&apos;s yield until
+                  you claim. On testnet this is a USYC-style stand-in (real USYC is institution-gated), so
+                  the yield is modeled, not a promised APR — but the deposit/redeem path is real on-chain.
+                  {" "}{bonus.claimed ? "Already claimed." : "Claim it any time."}
                 </p>
                 <button
                   onClick={handleClaimBonus}
