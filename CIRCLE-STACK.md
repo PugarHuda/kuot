@@ -20,8 +20,8 @@ Every Circle/Arc primitive Kuot uses, with a real on-chain / API proof. All on *
 | **reverse-x402 recursive** (Kuot novel) | Cite Kuot → fraction flows back to original authors, depth after depth | recursive split @ `$0.000013`/author |
 
 ## On-chain settlements (AttributionLedger)
-51 settled research queries → **376 author payouts** (361 distinct authors, ~$15.5 attributed) in
-real USDC, plus 285 authors holding ~$14.3 in escrow (live read at `/dashboard/activity` + `/api/stats`).
+57 settled research queries → **424 author payouts** (395 distinct authors, ~$17.3 attributed) in
+real USDC, plus 315 authors holding ~$15.9 in escrow (live read at `/dashboard/activity` + `/api/stats`).
 - Example settle tx `0xd4f7988cc5ce80bcfa165eac7dcc9a6ac55f571ac0cebfe648b9df5418a7e36e`.
 - **Full pipeline proven live end-to-end** (Venice `live` mode → grounding → x402 paper-buy → settle):
   research query "direct air carbon capture" → synthesis + 10 web citations + 8 weighted author
