@@ -31,15 +31,15 @@ to the cited authors. When another agent later cites Kuot's answer, a fraction f
 
 ## Traction — REAL, on-chain, verifiable now (`GET /api/stats`)
 Every number below is read live from Arc, not asserted:
-- **315 authors hold a real claimable balance** in `UnclaimedEscrow` (**~$15.9 USDC escrowed**),
+- **366 authors hold a real claimable balance** in `UnclaimedEscrow` (**~$18.1 USDC escrowed**),
   seeded through the **genuine research→settle pipeline** across 50+ topics (CRISPR/prime editing,
   perovskite, LLM hallucination, solid-state & Li-S batteries, quantum EC, DAC, Alzheimer, GNN/ML
   drug discovery & protein folding, SOFC, transformers, gut-microbiome immunotherapy, superconducting
   hydrides, wildfire AQ, fusion, scRNA atlas, perovskite LEDs, coral bleaching, neuromorphic…).
   Marquee real researchers cited & owed: **Yoshua Bengio, John Hardy, Dennis Selkoe, Oriol
   Vinyals, Michael Saliba, Michaël Grätzel, Shengdar Tsai, M. I. Eremets, Léon Bottou.**
-- **AttributionLedger:** 395 distinct authors paid across 424 `AuthorPaid` events, **~$17.3 USDC
-  attributed** on-chain → **~$33 total attributed to sources** (ledger + escrow).
+- **AttributionLedger:** 467 distinct authors paid across 504 `AuthorPaid` events, **~$20.3 USDC
+  attributed** on-chain → **~$38 total attributed to sources** (ledger + escrow).
 - **Real agent-to-agent volume:** an external buyer-agent paid Kuot **20+ times** via
   Gateway-batched reverse-x402 nanopayments on Arc (`npm run traction`; settlement ids printed,
   buyer Gateway balance visibly drops each time).

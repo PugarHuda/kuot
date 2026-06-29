@@ -43,8 +43,8 @@ Record at 1080p, captions on. Keep each beat tight — aim ~20s each.
 ## 2:30–3:00 — Traction & close
 - Run it live: `npm run traction -- 5` — an external **buyer agent** pays the x402 toll-booth +
   cites Kuot 5×; each line is a real Gateway-batched settlement on Arc (tx ids printed).
-- Cut to `/dashboard` + `GET /api/stats`: **315 authors hold a real on-chain balance ($15.9 escrowed)**,
-  395 cited / 424 payouts / **$17.3 attributed** (~$33 total to sources) — all read live from Arc.
+- Cut to `/dashboard` + `GET /api/stats`: **366 authors hold a real on-chain balance ($18.1 escrowed)**,
+  467 cited / 504 payouts / **$20.3 attributed** (~$38 total to sources) — all read live from Arc.
 - VO: "Eleven contracts live on Arc, 280+ real researchers already owed USDC, 20+ real agent-to-agent
   payments, an MCP other agents can pay today. This is the beginning — we keep building past the
   event." End on repo + live URL (`/cited` for authors).
