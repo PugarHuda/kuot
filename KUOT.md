@@ -29,7 +29,7 @@ original authors, accruing USYC-style vault yield while unclaimed.*
 ## Contracts (Arc testnet — see DEPLOYED.md for addresses)
 AttributionLedger · NameRegistry · UnclaimedEscrow · GroundingRegistry · ReputationBond ·
 StableFXPool · MockUSYC + CitationYieldUSYC · ShareRegistry · AgentRegistry8004 · BountyMarket
-(11 contracts).
+(11 deployed contracts).
 
 ## Differentiators
 1. **Recursive reverse-x402** — being cited earns money; the citation graph pays itself.

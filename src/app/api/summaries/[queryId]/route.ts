@@ -12,6 +12,14 @@ export const runtime = "nodejs";
 
 // Circle Gateway facilitator middleware — builds the 402, verifies + settles the
 // batched payment on Arc (settlement runs server-side on Vercel's clean network).
+// ponytail: best-effort single-use marker for the on-chain x402 fallback, per
+// serverless instance (no KV configured → can't share across instances cheaply).
+// Combined with a tight recency window it stops casual tx-hash replay. The payload
+// here is already public via ShareRegistry, so the residual cross-instance replay
+// is content the user could read anyway — acceptable. Upgrade to a KV/on-chain
+// marker if this endpoint ever gates non-public content.
+const seenX402Tx = new Set<string>();
+
 let _gw: ReturnType<typeof createGatewayMiddleware> | null = null;
 function gateway() {
   const sellerAddress =
@@ -133,16 +141,19 @@ export async function GET(req: Request, ctx: { params: Promise<{ queryId: string
   // reverse-x402 headline working even if Circle's Gateway facilitator API is
   // unreachable, and makes it demoable offline (pay with a plain USDC transfer +
   // its tx hash). GatewayClient (base64) payments still take the Gateway path below.
-  if (paymentHeader && /^0x[0-9a-fA-F]{64}$/.test(paymentHeader)) {
+  if (paymentHeader && /^0x[0-9a-fA-F]{64}$/.test(paymentHeader) && !seenX402Tx.has(paymentHeader.toLowerCase())) {
     const seller = (process.env.KUOT_COLLECTOR ?? process.env.NEXT_PUBLIC_SESSION_ACCOUNT) as `0x${string}` | undefined;
-    if (seller && (await verifyPayment(paymentHeader as `0x${string}`, getAddress(seller), price.priceUsdc6))) {
+    // 120s recency: the payment must be fresh, so an old inbound transfer to the
+    // (public) collector address can't be scavenged and replayed.
+    if (seller && (await verifyPayment(paymentHeader as `0x${string}`, getAddress(seller), price.priceUsdc6, 120))) {
+      seenX402Tx.add(paymentHeader.toLowerCase());
       const plan = recursivePlan(result, price);
       return NextResponse.json(
         { queryId, synthesis: result.synthesis, ...plan, settlement: { settled: true, onchain: paymentHeader, via: "arc-direct" } },
         { status: 200, headers: { "X-PAYMENT-RESPONSE": paymentHeader } },
       );
     }
-    // tx hash present but not a valid payment → fall through to the 402 challenge.
+    // tx hash present but not a valid/fresh payment → fall through to the 402 challenge.
   }
 
   // Real flow: the facilitator builds the 402 (unpaid) or verifies + settles (paid).

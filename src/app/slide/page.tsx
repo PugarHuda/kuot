@@ -263,7 +263,7 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
             GitHub
           </a>
         </div>
-        <p className="mt-6 font-mono text-xs text-[var(--muted)]">kuot.vercel.app</p>
+        <p className="mt-6 font-mono text-xs text-[var(--muted)]">kuot-azure.vercel.app</p>
       </div>
     ),
   },

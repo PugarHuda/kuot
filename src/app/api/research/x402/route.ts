@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { createGatewayMiddleware } from "@circle-fin/x402-batching/server";
-import { getAddress } from "viem";
 import { runResearch } from "@/lib/agent";
-import { verifyPayment } from "@/lib/x402pay";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -110,25 +108,11 @@ export async function POST(req: Request) {
     );
   }
 
-  // Pure on-chain settle fallback (no Circle API dependency): an X-PAYMENT that is
-  // a confirmed USDC transfer to the seller on Arc settles the toll directly. Keeps
-  // the paid agent service working even if Circle's Gateway facilitator is down.
-  if (paymentHeader && /^0x[0-9a-fA-F]{64}$/.test(paymentHeader)) {
-    const seller = (process.env.KUOT_COLLECTOR ?? process.env.NEXT_PUBLIC_SESSION_ACCOUNT) as `0x${string}` | undefined;
-    if (seller && (await verifyPayment(paymentHeader as `0x${string}`, getAddress(seller), BigInt(price.usdc6)))) {
-      try {
-        const result = await runResearch(query, { papers, rootBudgetUSDC: body.rootBudgetUSDC, webSources: body.webSources });
-        return NextResponse.json(
-          { paid: true, price, settlement: { settled: true, onchain: paymentHeader, via: "arc-direct" }, result },
-          { status: 200, headers: { "X-PAYMENT-RESPONSE": paymentHeader } },
-        );
-      } catch (e) {
-        return NextResponse.json({ error: e instanceof Error ? e.message : String(e) }, { status: 502 });
-      }
-    }
-    // tx hash present but not a valid payment → fall through to the 402 challenge.
-  }
-
+  // NOTE: this PAID endpoint runs the full (expensive) Venice pipeline, so it
+  // settles ONLY via the Circle Gateway facilitator (verified+settled batch) — no
+  // bare tx-hash fallback here, since a replayable hash would let an attacker drive
+  // unbounded compute. The reverse-x402 CITE endpoint (/api/summaries) keeps an
+  // on-chain fallback because its payload is already public via ShareRegistry.
   const pw = await runGatewayPaywall(price.dollars, paymentHeader);
   if (!pw.paid) {
     // Unpaid → return the facilitator's 402 verbatim (the GatewayClient understands it),
