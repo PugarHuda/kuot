@@ -45,12 +45,13 @@ cited earns money; the citation graph pays itself, depth after depth."
 ## 2:05–2:30 — Real yield + claim (USYC + ORCID)
 **DO:** Open **Claim earnings**; click **Demo verify (test ORCID)** → bind.
 **SAY:** "Authors claim by proving their ORCID. Until they do, their unclaimed rewards aren't idle —
-they earn real treasury yield in a USYC vault. Reputation is staked as collateral, slashable on a
-false citation. Nothing here is mocked away."
+they sit in a USYC-style ERC-4626 vault — the deposit/redeem path is real on-chain (a self-funded
+stand-in on testnet, since real USYC is institution-gated). Reputation is staked as collateral,
+slashable on a false citation."
 
 ## 2:30–2:50 — Traction & close
 **DO:** Back to **Activity** / **Overview** showing the live totals.
-**SAY:** "Eight contracts live on Arc, real USDC flowing, an MCP other agents can pay today, and a
+**SAY:** "Eleven contracts live on Arc, real USDC flowing, an MCP other agents can pay today, and a
 recursive economy that compounds. This is the beginning — we keep building past June twenty-ninth."
 **DO:** End on the repo + live URL on screen.
 

@@ -17,6 +17,7 @@ const CONTRACTS: [string, string, string][] = [
   ["MockUSYC", "0xEe59BD14b54F48D769032c0950a773d41E12115d", "ERC-4626 yield vault (USYC-style stand-in on testnet)"],
   ["CitationYieldUSYC", "0x9E48A2D1501A1DB6A77b7bb325B2C22070be28d8", "Routes unclaimed rewards into the vault; redeem principal + yield"],
   ["ShareRegistry", "0x25BC0d7eA9B574CF47D7018cfBc5a1627F3227Df", "Publishes results on-chain for public /r/<id> share links + reverse-x402"],
+  ["BountyMarket", "0x9B06C9314d124FF13a1BA8213882F19332E0444a", "Sponsor a topic with USDC; settled payout splits to the cited authors"],
 ];
 const ENDPOINTS: [string, string][] = [
   ["POST /api/research", "Run the agent mesh → synthesis + payout plan + agent trace"],

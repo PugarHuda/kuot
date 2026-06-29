@@ -21,6 +21,7 @@ Deployer/operator/agent: `0x31481ADc889B5e00b70846F59967DAF09CBe4a3e`
 | MockUSYC (yield vault) | `0xEe59BD14b54F48D769032c0950a773d41E12115d` |
 | CitationYieldUSYC | `0x9E48A2D1501A1DB6A77b7bb325B2C22070be28d8` |
 | ShareRegistry (reverse-x402 store) | `0x25BC0d7eA9B574CF47D7018cfBc5a1627F3227Df` |
+| BountyMarket (sponsor a topic → pays cited authors) | `0x9B06C9314d124FF13a1BA8213882F19332E0444a` |
 | USDC (Arc erc20) | `0x3600000000000000000000000000000000000000` |
 | Circle GatewayWallet (pre-existing) | `0x0077777d7EBA4688BDeF3E311b846F25870A19B9` |
 
@@ -84,6 +85,15 @@ Deployer/operator/agent: `0x31481ADc889B5e00b70846F59967DAF09CBe4a3e`
   `ab38c82f-f8ae-5873-921a-7360c7583cb1`** (state INITIATED). Reproduce:
   `GET /api/dev/agent-pay?token=…` (server-side, Circle API). The Circle-managed Agent Wallet is
   the real payer for author payouts.
+
+**BountyMarket — sponsor a topic, pay the cited authors (live on Arc)** — `0x9B06C9314d124FF13a1BA8213882F19332E0444a`
+- Deploy tx `0xd9112e0e3ec2347c93a51fa496a47d3c2fda6eab3377cd305f12fa3e7a3f72d7` (constructor: Arc USDC + operator).
+- Two real funded bounties created by the operator-sponsor (0.3 USDC each, 7-day TTL): #0 open
+  ("best carbon capture methods 2026"), #1 settled.
+- `settle(#1)` paid the **top 3 real authors** from the live AuthorPaid leaderboard (3333/3333/3334 bps),
+  tx `0x4fad115c221fa9c501246f5493bf08bf9f3abac5c5ce183e2f45bc51475b8f03` (status success). The Bounties
+  page now shows both an open and a settled bounty, read live from the contract.
+- Reproduce: `node scripts/seed-bounty-arc.mjs` (approve → create → settle to real leaderboard authors).
 
 ## Reproduce
 ```

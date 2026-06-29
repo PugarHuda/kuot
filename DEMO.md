@@ -45,7 +45,7 @@ Record at 1080p, captions on. Keep each beat tight — aim ~20s each.
   cites Kuot 5×; each line is a real Gateway-batched settlement on Arc (tx ids printed).
 - Cut to `/dashboard` + `GET /api/stats`: **285 authors hold a real on-chain balance ($14 escrowed)**,
   361 cited / 375 payouts / **$15.5 attributed** (~$30 total to sources) — all read live from Arc.
-- VO: "Ten contracts live on Arc, 280+ real researchers already owed USDC, 20+ real agent-to-agent
+- VO: "Eleven contracts live on Arc, 280+ real researchers already owed USDC, 20+ real agent-to-agent
   payments, an MCP other agents can pay today. This is the beginning — we keep building past the
   event." End on repo + live URL (`/cited` for authors).
 

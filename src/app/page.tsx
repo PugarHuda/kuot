@@ -104,7 +104,7 @@ export default function Home() {
               img: "/step-pay.webp",
               n: "III",
               t: "Authors paid — then paid again",
-              d: "Every citation pays its author a nanopayment. Unclaimed shares earn real USYC yield until they claim with ORCID. When another agent cites Kuot, a fraction flows recursively back to the originals.",
+              d: "Every citation pays its author a nanopayment. Unclaimed shares sit in a USYC-style ERC-4626 vault until they claim with ORCID. When another agent cites Kuot, a fraction flows recursively back to the originals.",
               tag: "reverse-x402 · USYC",
             },
           ].map((s, i) => (
@@ -151,7 +151,7 @@ export default function Home() {
           {[
             { icon: "🔁", t: "Recursive reverse-x402", d: "Being cited earns money. When an agent grounds an answer in Kuot's work it pays Kuot, and a fraction flows back to the original authors — the citation graph pays itself, depth after depth." },
             { icon: "🧾", t: "Proof-of-grounding before pay", d: "A keccak256 digest of the answer is committed on-chain. Only authors whose work actually grounded it are paid — closing the x402 pay-then-maybe-delivered gap." },
-            { icon: "🌱", t: "Real yield, real stakes", d: "Unclaimed rewards earn USYC treasury yield until the author claims. Reputation is USDC posted as collateral (ERC-8004), slashable on a false citation — not a number you ask to be trusted." },
+            { icon: "🌱", t: "Vault yield, real stakes", d: "Unclaimed rewards sit in a USYC-style ERC-4626 vault until the author claims — the deposit/redeem path is real on-chain (a self-funded stand-in on testnet). Reputation is USDC posted as collateral (ERC-8004), slashable on a false citation — not a number you ask to be trusted." },
           ].map((v, i) => (
             <Reveal key={v.t} delay={i * 0.1}>
               <div className="h-full rounded-xl border border-[var(--rule)] bg-[var(--paper-2)] p-5 transition hover:-translate-y-0.5 hover:border-[var(--accent)]/40 hover:shadow-[0_16px_40px_-16px_color-mix(in_srgb,var(--gold)_55%,transparent)]">

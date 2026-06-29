@@ -2,7 +2,7 @@
 
 **Positioning:** *the recursive citation economy on Arc — every AI answer pays its sources a
 nanopayment, and every agent that cites those answers pays again, compounding back to the
-original authors, earning real USYC yield while unclaimed.*
+original authors, accruing USYC-style vault yield while unclaimed.*
 
 ## Stack
 - **Frontend/API:** Next.js (App Router), viem/wagmi, Tailwind.
@@ -28,12 +28,13 @@ original authors, earning real USYC yield while unclaimed.*
 
 ## Contracts (Arc testnet — see DEPLOYED.md for addresses)
 AttributionLedger · NameRegistry · UnclaimedEscrow · GroundingRegistry · ReputationBond ·
-MockUSYC + CitationYieldUSYC · ShareRegistry · AgentRegistry8004 · BountyMarket.
+StableFXPool · MockUSYC + CitationYieldUSYC · ShareRegistry · AgentRegistry8004 · BountyMarket
+(11 contracts).
 
 ## Differentiators
 1. **Recursive reverse-x402** — being cited earns money; the citation graph pays itself.
 2. **Proof-of-grounding before pay** — on-chain digest; only grounding authors are paid.
-3. **USYC-backed yield** — unclaimed rewards earn real ERC-4626 treasury yield.
+3. **USYC-style yield** — unclaimed rewards sit in a real ERC-4626 vault (deposit/redeem path is real on-chain; a self-funded stand-in on testnet since real USYC is institution-gated).
 4. **Directional reputation-as-collateral** — USDC bond slashable on a false citation (ERC-8004).
 
 ## How it maps to judging
@@ -45,4 +46,4 @@ MockUSYC + CitationYieldUSYC · ShareRegistry · AgentRegistry8004 · BountyMark
 - **Innovation** — recursive reverse-x402 + proof-of-grounding + directional reputation bond.
 
 ## Tests
-80 Vitest + 51 Foundry green. `npm test` · `cd contracts && forge test`.
+102 Vitest + 59 Foundry green. `npm test` · `cd contracts && forge test`.
