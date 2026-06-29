@@ -70,9 +70,14 @@ Deployer/operator/agent: `0x31481ADc889B5e00b70846F59967DAF09CBe4a3e`
   the Gateway API + destination gas), call **CCTP V2 `depositForBurn` directly on Arc** (pure on-chain).
   Reproduce: **`node scripts/cctp-burn.mjs 0.05`** (approve TokenMessengerV2 → depositForBurn → Base,
   domain 6). Fresh burn tx **`0x05b0cd2fb8f72a0eefcaf741fe0948f9481210b39df81d02cae25d56ae424ccd`**
-  (status success, 7 logs; TokenMessengerV2 `0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA`). Mint on Base
-  is completed via Circle's attestation service. (Earlier hand-run burn:
-  `0xceb08d128510915eed26c6b4f300dbaf8abf85d2b87ebd102ec3fb16c2f05715`.)
+  (status success, 7 logs; TokenMessengerV2 `0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA`,
+  MessageTransmitterV2 `0xe737e5cebeeba77efe34d4aa090756590b1ce275`). CCTP message decoded from the
+  burn: **version 1, source domain 26 (Arc) → dest domain 6 (Base), 376-byte message.** (Earlier
+  hand-run burn: `0xceb08d128510915eed26c6b4f300dbaf8abf85d2b87ebd102ec3fb16c2f05715`.)
+  - **Round-trip (mint on Base) is implemented in code**: `node scripts/cctp-mint.mjs <arcBurnTx>`
+    extracts the message → polls Circle's Iris attestation (`/v2/messages/26`) → calls
+    `receiveMessage` on Base's MessageTransmitterV2 to mint. Completing the mint needs Iris
+    reachability + Base-Sepolia gas; the burn half is fully on-chain on Arc today.
 - **EURC multi-currency — SOLVED, live.** StableFX USDC↔EURC has no route on Arc testnet, so pay EU
   authors by **transferring EURC directly** (EURC `0x89B5…D72a` is native on Arc) — no swap. Proven:
   operator paid **0.05 EURC** to an author, tx
