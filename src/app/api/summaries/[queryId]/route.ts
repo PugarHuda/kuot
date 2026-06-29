@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { createGatewayMiddleware } from "@circle-fin/x402-batching/server";
+import { getAddress } from "viem";
 import { getShared } from "@/lib/store";
 import { proveGrounding } from "@/lib/grounding";
 import { recursiveSplit } from "@/lib/recursive";
 import { selfPriceForSynthesis, type SelfPrice } from "@/lib/pricing";
+import { verifyPayment } from "@/lib/x402pay";
 import type { ResearchResult } from "@/lib/agent";
 
 export const runtime = "nodejs";
@@ -124,6 +126,23 @@ export async function GET(req: Request, ctx: { params: Promise<{ queryId: string
       { queryId, synthesis: result.synthesis, ...plan, settlement: { note: "demo preview — a real GatewayClient payment settles the batch on Arc" } },
       { status: 200 },
     );
+  }
+
+  // Pure on-chain settle fallback (no Circle API dependency): if the X-PAYMENT is
+  // a confirmed USDC transfer to the seller on Arc, accept it. This keeps the
+  // reverse-x402 headline working even if Circle's Gateway facilitator API is
+  // unreachable, and makes it demoable offline (pay with a plain USDC transfer +
+  // its tx hash). GatewayClient (base64) payments still take the Gateway path below.
+  if (paymentHeader && /^0x[0-9a-fA-F]{64}$/.test(paymentHeader)) {
+    const seller = (process.env.KUOT_COLLECTOR ?? process.env.NEXT_PUBLIC_SESSION_ACCOUNT) as `0x${string}` | undefined;
+    if (seller && (await verifyPayment(paymentHeader as `0x${string}`, getAddress(seller), price.priceUsdc6))) {
+      const plan = recursivePlan(result, price);
+      return NextResponse.json(
+        { queryId, synthesis: result.synthesis, ...plan, settlement: { settled: true, onchain: paymentHeader, via: "arc-direct" } },
+        { status: 200, headers: { "X-PAYMENT-RESPONSE": paymentHeader } },
+      );
+    }
+    // tx hash present but not a valid payment → fall through to the 402 challenge.
   }
 
   // Real flow: the facilitator builds the 402 (unpaid) or verifies + settles (paid).

@@ -58,9 +58,10 @@ export async function GET() {
       const attestedAll = dedup(chunks.flatMap((c) => c[0]));
       const paidAll = dedup(chunks.flatMap((c) => c[1]));
       // Trust only operator-signed attestations; drop spoofed attest() entries.
-      const attested = OPERATOR ? attestedAll.filter((l) => String(l.args.payer).toLowerCase() === OPERATOR) : attestedAll;
+      // FAIL CLOSED: no operator configured → trust nothing (not passthrough).
+      const attested = OPERATOR ? attestedAll.filter((l) => String(l.args.payer).toLowerCase() === OPERATOR) : [];
       const legitQueries = new Set(attested.map((l) => String(l.args.queryId)));
-      const paid = OPERATOR ? paidAll.filter((l) => legitQueries.has(String(l.args.queryId))) : paidAll;
+      const paid = paidAll.filter((l) => legitQueries.has(String(l.args.queryId)));
       attestations = attested.length;
       authorPayouts = paid.length;
       // Sum in bigint (no float drift / precision loss), divide once at the end.

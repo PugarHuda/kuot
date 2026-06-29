@@ -193,7 +193,7 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
           <Stat v="11" k="contracts live" />
           <Stat v="161" k="tests green" />
           <Stat v="5" k="on-chain agents" />
-          <Stat v="366" k="authors paid" />
+          <Stat v="467" k="authors paid" />
         </div>
         <p className="mt-6 text-sm text-[var(--ink)]/75">
           Circle Gateway batched verify+settle on Arc (createGatewayMiddleware, gas in USDC; buyer balance 0.9999→0.9998).{" "}

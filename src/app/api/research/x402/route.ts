@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createGatewayMiddleware } from "@circle-fin/x402-batching/server";
+import { getAddress } from "viem";
 import { runResearch } from "@/lib/agent";
+import { verifyPayment } from "@/lib/x402pay";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -106,6 +108,25 @@ export async function POST(req: Request) {
       { paid: false, price, note: "Pay the x402 toll to run. Free output is available at /api/research." },
       { status: 402 },
     );
+  }
+
+  // Pure on-chain settle fallback (no Circle API dependency): an X-PAYMENT that is
+  // a confirmed USDC transfer to the seller on Arc settles the toll directly. Keeps
+  // the paid agent service working even if Circle's Gateway facilitator is down.
+  if (paymentHeader && /^0x[0-9a-fA-F]{64}$/.test(paymentHeader)) {
+    const seller = (process.env.KUOT_COLLECTOR ?? process.env.NEXT_PUBLIC_SESSION_ACCOUNT) as `0x${string}` | undefined;
+    if (seller && (await verifyPayment(paymentHeader as `0x${string}`, getAddress(seller), BigInt(price.usdc6)))) {
+      try {
+        const result = await runResearch(query, { papers, rootBudgetUSDC: body.rootBudgetUSDC, webSources: body.webSources });
+        return NextResponse.json(
+          { paid: true, price, settlement: { settled: true, onchain: paymentHeader, via: "arc-direct" }, result },
+          { status: 200, headers: { "X-PAYMENT-RESPONSE": paymentHeader } },
+        );
+      } catch (e) {
+        return NextResponse.json({ error: e instanceof Error ? e.message : String(e) }, { status: 502 });
+      }
+    }
+    // tx hash present but not a valid payment → fall through to the 402 challenge.
   }
 
   const pw = await runGatewayPaywall(price.dollars, paymentHeader);

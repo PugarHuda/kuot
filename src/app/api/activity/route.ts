@@ -42,11 +42,13 @@ export async function GET() {
     const allPaid = chunks.flatMap((c) => c[1]);
 
     // Trust only operator-signed attestations (drop spoofed attest() calls).
+    // FAIL CLOSED: if the operator address isn't configured, trust nothing rather
+    // than pass spoofable data through.
     const attested = OPERATOR
       ? allAttested.filter((l) => (l.args.payer as string).toLowerCase() === OPERATOR)
-      : allAttested;
+      : [];
     const legitQueries = new Set(attested.map((l) => l.args.queryId as string));
-    const paid = OPERATOR ? allPaid.filter((l) => legitQueries.has(l.args.queryId as string)) : allPaid;
+    const paid = allPaid.filter((l) => legitQueries.has(l.args.queryId as string));
 
     // Per-query author counts.
     const authorsByQuery = new Map<string, number>();
