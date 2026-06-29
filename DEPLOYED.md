@@ -74,10 +74,13 @@ Deployer/operator/agent: `0x31481ADc889B5e00b70846F59967DAF09CBe4a3e`
   MessageTransmitterV2 `0xe737e5cebeeba77efe34d4aa090756590b1ce275`). CCTP message decoded from the
   burn: **version 1, source domain 26 (Arc) → dest domain 6 (Base), 376-byte message.** (Earlier
   hand-run burn: `0xceb08d128510915eed26c6b4f300dbaf8abf85d2b87ebd102ec3fb16c2f05715`.)
-  - **Round-trip (mint on Base) is implemented in code**: `node scripts/cctp-mint.mjs <arcBurnTx>`
-    extracts the message → polls Circle's Iris attestation (`/v2/messages/26`) → calls
-    `receiveMessage` on Base's MessageTransmitterV2 to mint. Completing the mint needs Iris
-    reachability + Base-Sepolia gas; the burn half is fully on-chain on Arc today.
+  - **Round-trip COMPLETE — minted on Base ✅.** `node scripts/cctp-mint.mjs <arcBurnTx>` extracts the
+    message → polls Circle's Iris attestation (`/v2/messages/26`, 262-char attestation returned) →
+    calls `receiveMessage` on Base's MessageTransmitterV2 `0xE737e5cE…`. Mint tx on **Base Sepolia**
+    **`0x62f3fabe1c9f4c425bcc9c83187b06ab8eb3ae634889b51315fdc2ab27dfbdcc`** (status success); the
+    operator received the 0.05 USDC on Base. Full cross-chain USDC flow proven: **burn on Arc →
+    Circle attestation → mint on Base.** (Gas funded by bridging Sepolia→Base via
+    `scripts/bridge-to-base.mjs`.)
 - **EURC multi-currency — SOLVED, live.** StableFX USDC↔EURC has no route on Arc testnet, so pay EU
   authors by **transferring EURC directly** (EURC `0x89B5…D72a` is native on Arc) — no swap. Proven:
   operator paid **0.05 EURC** to an author, tx

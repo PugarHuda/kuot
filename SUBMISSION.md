@@ -56,8 +56,9 @@ Every number below is read live from Arc, not asserted:
   MCP toll-booth, recursive author split.
 - **Circle Agent Wallets (developer-controlled)** — the agent pays its **top source directly from
   its own Circle wallet inside the real `/api/settle` loop** (not just a dev proof).
-- **CCTP V2** — `depositForBurn` on Arc → Base (domain 6), **reproducible from code**
-  (`scripts/cctp-burn.mjs`; fresh burn `0x05b0cd2f…`).
+- **CCTP V2** — **full cross-chain round-trip proven**: `depositForBurn` on Arc (domain 26→6) →
+  Circle attestation → `receiveMessage` mint on Base. `scripts/cctp-burn.mjs` + `cctp-mint.mjs`;
+  burn `0x05b0cd2f…` (Arc) → mint `0x62f3fabe…` (Base Sepolia, success).
 - **EURC** — real multi-currency author payout (direct + swap-then-pay).
 - **StableFX swap** — Circle's App Kit StableFX has **no Arc route**, so Kuot runs its **own**
   on-chain `StableFXPool` (honest: a bespoke AMM, not the App Kit product).
