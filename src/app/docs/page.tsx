@@ -35,6 +35,7 @@ const ENDPOINTS: [string, string][] = [
 const PROOFS: [string, string, string][] = [
   ["Grounding proof committed on Arc", "0xad77a890ee39fe4327d3455f2c140bf21d4ff02dc4f332419f118329463c01ed", "https://testnet.arcscan.app/tx/"],
   ["Settlement on Arc (attestAndSplit)", "0xd4f7988cc5ce80bcfa165eac7dcc9a6ac55f571ac0cebfe648b9df5418a7e36e", "https://testnet.arcscan.app/tx/"],
+  ["CCTP V2 mint on Base (Arc→Base round-trip)", "0x62f3fabe1c9f4c425bcc9c83187b06ab8eb3ae634889b51315fdc2ab27dfbdcc", "https://sepolia.basescan.org/tx/"],
 ];
 
 function H({ id, children }: { id: string; children: React.ReactNode }) {
