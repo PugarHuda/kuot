@@ -186,8 +186,14 @@ export default function Docs() {
           <p className="mt-3 text-sm leading-relaxed text-[var(--ink)]/80">
             <b>Circle Agent Stack</b> (Agent Wallets, Gateway nanopayments, App Kit Swap) ·
             <b> Venice AI</b> (chat, web-search, embeddings, image, TTS) · <b>Circle Gateway</b> permissionless
-            (batching, gas in USDC, Ed25519 webhooks) · <b>x402</b> · Next.js · viem · wagmi ·
+            (batching, gas in USDC, Ed25519 webhooks) · <b>x402</b> · <b>CCTP V2</b> (Arc→Base burn+mint) · Next.js · viem · wagmi ·
             Foundry. Spans RFB-1 Autonomous Paying Agents, RFB-3 Agent-to-Agent, and RFB-6 Creator Monetization.
+          </p>
+          <p className="mt-3 text-sm leading-relaxed text-[var(--ink)]/80">
+            Two reusable primitives ship with it: an <b>MCP server</b> any agent can call (research, cite,
+            pay), and a <b>Citation-Toll x402 sidecar</b> — a drop-in reverse-proxy that puts a sub-cent
+            on-chain toll in front of <em>any</em> HTTP resource and pays its sources, no fork required
+            (<code>npm run toll</code>). The rail is reusable, not a single-app demo.
           </p>
 
           <footer className="mt-12 border-t border-[var(--rule)] pt-5 text-xs text-[var(--muted)]">
