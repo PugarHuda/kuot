@@ -74,9 +74,9 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
     id: "permission",
     render: (
       <div className="max-w-2xl">
-        <Kicker>One signature · the UX</Kicker>
+        <Kicker>Spending cap · the UX</Kicker>
         <h2 className="serif mt-4 text-4xl font-semibold leading-tight">
-          Sign once. The agent can never overspend.
+          A hard cap. The agent can never overspend.
         </h2>
         <p className="mt-5 text-lg leading-relaxed text-[var(--ink)]/75">
           A single <b>Circle Agent Wallet spending policy</b> (Circle Agent Stack):
@@ -84,7 +84,7 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
           The cap and the window are one number — the agent draws ~0.01 USDC per paper and never exceeds it.
         </p>
         <div className="mt-6 flex flex-wrap gap-2 text-sm">
-          {["Hard cap", "Auto-expiry", "Full custody", "No blanket approval", "No per-action popups"].map((t) => (
+          {["Hard cap", "Auto-expiry", "Non-custodial", "No blanket approval", "MPC-signed by Circle"].map((t) => (
             <span key={t} className="rounded-md border border-[var(--rule)] bg-[var(--paper-2)] px-3 py-1.5">
               {t}
             </span>
@@ -170,7 +170,7 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
         <ul className="mt-4 space-y-2 text-sm">
           {[
             ["Direct (primary)", "attestAndSplit — records + pays in one tx, atomic"],
-            ["Circle Gateway relay", "gas-free, gas paid in USDC (Arc or Base Arc)"],
+            ["Circle Gateway relay", "gas-free, gas paid in USDC (Arc)"],
             ["Escrow → ORCID", "hold unclaimed shares for authors to claim later"],
             ["Auto-pay / Upfront", "settle on finish, or lock the pool first (lock-upfront)"],
           ].map(([t, d]) => (
@@ -196,9 +196,8 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
           <Stat v="285" k="authors paid" />
         </div>
         <p className="mt-6 text-sm text-[var(--ink)]/75">
-          Circle Gateway Gateway-batched relay on Base:{" "}
-          <span className="font-mono text-[var(--accent)]">0x6f4c8d53…8480c</span> (type 0x4, gas in USDC).
-          x402 nanopayments on Arc · proof-of-grounding · USYC yield · ERC-8004 reputation · ORCID.
+          Circle Gateway batched verify+settle on Arc (createGatewayMiddleware, gas in USDC; buyer balance 0.9999→0.9998).{" "}
+          x402 nanopayments on Arc · proof-of-grounding · USYC-style yield · ERC-8004 reputation · ORCID.
         </p>
       </div>
     ),

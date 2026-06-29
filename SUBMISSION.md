@@ -31,15 +31,15 @@ to the cited authors. When another agent later cites Kuot's answer, a fraction f
 
 ## Traction — REAL, on-chain, verifiable now (`GET /api/stats`)
 Every number below is read live from Arc, not asserted:
-- **~200 authors hold a real claimable balance** in `UnclaimedEscrow` (**$10.6 USDC escrowed**),
-  seeded through the **genuine research→settle pipeline** across 25 topics (CRISPR/prime editing,
+- **285 authors hold a real claimable balance** in `UnclaimedEscrow` (**~$14.3 USDC escrowed**),
+  seeded through the **genuine research→settle pipeline** across 50+ topics (CRISPR/prime editing,
   perovskite, LLM hallucination, solid-state & Li-S batteries, quantum EC, DAC, Alzheimer, GNN/ML
   drug discovery & protein folding, SOFC, transformers, gut-microbiome immunotherapy, superconducting
   hydrides, wildfire AQ, fusion, scRNA atlas, perovskite LEDs, coral bleaching, neuromorphic…).
   Marquee real researchers cited & owed: **Yoshua Bengio, John Hardy, Dennis Selkoe, Oriol
   Vinyals, Michael Saliba, Michaël Grätzel, Shengdar Tsai, M. I. Eremets, Léon Bottou.**
-- **AttributionLedger:** 233 distinct authors paid across 239 `AuthorPaid` events, **$10.5 USDC
-  attributed** on-chain → **~$21 total attributed to sources** (ledger + escrow).
+- **AttributionLedger:** 361 distinct authors paid across 376 `AuthorPaid` events, **~$15.5 USDC
+  attributed** on-chain → **~$30 total attributed to sources** (ledger + escrow).
 - **Real agent-to-agent volume:** an external buyer-agent paid Kuot **20+ times** via
   Gateway-batched reverse-x402 nanopayments on Arc (`npm run traction`; settlement ids printed,
   buyer Gateway balance visibly drops each time).
@@ -64,7 +64,7 @@ Every number below is read live from Arc, not asserted:
 - **USYC** — a real ERC-4626 vault **mechanism**; honest caveat: it's a **self-funded `MockUSYC`
   stand-in** (real USYC is institution-gated), so the redeem path is real but the yield is seeded.
 - **ERC-8004** — AgentRegistry (5 agents) + directional ReputationBond, deployed and exercised.
-- **USDC** native gas + ERC-20 throughout. **10 Solidity contracts** on Arc (Foundry).
+- **USDC** native gas + ERC-20 throughout. **11 Solidity contracts** on Arc (Foundry).
 
 ## Agentic sophistication
 Venice multi-agent mesh: Planner → parallel Readers → Synthesizer → Fact-checker revision loop →

@@ -82,7 +82,7 @@ export default function Docs() {
           <p className="text-[11px] uppercase tracking-[0.2em] text-[var(--accent)]">Documentation</p>
           <h1 className="serif mt-1 text-4xl font-semibold tracking-tight">Kuot</h1>
           <p className="mt-3 max-w-2xl text-base leading-relaxed text-[var(--ink)]/80">
-            An autonomous AI research agent that cites <em>and pays</em> its sources. br
+            An autonomous AI research agent that cites <em>and pays</em> its sources.{" "}
             Kuot runs under a Circle Agent Wallet spending cap; the agent buys papers, reads them with Venice, and splits USDC
             back to every author it cites — gas-free, non-custodial, attested on-chain.
           </p>
@@ -90,15 +90,15 @@ export default function Docs() {
           <H id="overview">Overview</H>
           <p className="mt-3 text-sm leading-relaxed text-[var(--ink)]/80">
             Most &ldquo;AI + crypto&rdquo; agents hold a blanket token approval or custody your funds.
-            Kuot does neither: the user signs a single <b>a Circle Agent Wallet spending policy</b> — a
-            periodic USDC budget (e.g. &ldquo;10 USDC/day, expires 24h&rdquo;) — and the agent operates
-            inside a cryptographically enforced cap it can never exceed. Every citation becomes an
-            on-chain payment to its author.
+            Kuot does neither: the agent runs under a <b>developer-controlled Circle Agent Wallet</b> with a
+            cryptographically enforced spending cap — a periodic USDC budget (e.g. &ldquo;10 USDC/day&rdquo;)
+            it can never exceed, MPC-signed by Circle, never touching a user&rsquo;s keys or funds. Every
+            citation becomes an on-chain payment to its author.
           </p>
 
           <H id="how">How it works</H>
           <ol className="mt-3 space-y-3 text-sm leading-relaxed text-[var(--ink)]/80">
-            <li><b>1 · Grant once.</b> Sign one Agent Wallet policy permission via a wallet. Keep custody; never sign again.</li>
+            <li><b>1 · Set a budget once.</b> The agent runs under a Circle Agent Wallet spending cap — no blanket approval, no custody of your funds.</li>
             <li><b>2 · The agents work.</b> The Researcher pays for papers via <b>x402</b>, delegates narrowed scopes to specialists, and reasons with <b>Venice</b>.</li>
             <li><b>3 · Authors are paid.</b> The payout is attested on-chain and relayed gas-free via the <b>Circle Gateway</b>. Unclaimed shares wait in escrow (and earn a loyalty yield) until the author binds their <b>ORCID</b>.</li>
           </ol>

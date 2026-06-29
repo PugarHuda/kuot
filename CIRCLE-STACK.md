@@ -5,7 +5,7 @@ Every Circle/Arc primitive Kuot uses, with a real on-chain / API proof. All on *
 
 | Circle / Arc primitive | How Kuot uses it | Live proof |
 |---|---|---|
-| **Arc L1** | Every contract + settlement lives here; gas paid in USDC, sub-second finality | 10 contracts deployed (below) |
+| **Arc L1** | Every contract + settlement lives here; gas paid in USDC, sub-second finality | 11 contracts deployed (below) |
 | **Circle Gateway — nanopayments (batched)** | Reverse-x402 cite settled via `createGatewayMiddleware` verify+settle; gas-free batched | settlement `0c53ea2c-…`, buyer Gateway balance `0.9999 → 0.9998` |
 | **x402** | Agent pays papers + reverse-x402 (cite Kuot); 402 challenge → PAYMENT-REQUIRED → settle | reverse-x402 `/api/summaries/14c966d503a1d1b2` → 402 + recursive split |
 | **Circle Agent Wallets** (developer-controlled) | The agent has its own Circle wallet that **pays authors** via `createTransaction` | wallet `0x69906004…7cea`, tx `ab38c82f-f8ae-5873-921a-7360c7583cb1` (0.05 USDC) |
@@ -14,13 +14,14 @@ Every Circle/Arc primitive Kuot uses, with a real on-chain / API proof. All on *
 | **EURC** | Multi-currency author payout — pay EU authors in EURC directly (no swap) | transfer `0x393469b110b0a0ae47d9cb2f9ce2d50c7cfcd8ff6468001547fbd28d45101062` (0.05 EURC) |
 | **StableFX swap (USDC↔EURC)** | App Kit code ready (`src/lib/fx.ts`); LIVE swap via Kuot's own on-chain `StableFXPool` on Arc → swap-then-pay (`payAuthorEurcViaSwap`) | swap 1 USDC → 0.917240 EURC, tx `0x01c2e1fefceb7ba9711c0e2042cb85d693ea67e09c3258f4c1f7d597b8930cef` |
 | **USYC** (tokenized treasury) | Unclaimed rewards accrue in a real ERC-4626 vault. NOTE: a **self-funded `MockUSYC` stand-in** on testnet (real USYC is institution-gated); the vault/redeem *mechanism* is real, the yield *source* is `simulateYield`, not treasuries | accrue 1.0 → vault +0.5 → redeem 1.5 (Foundry + on-chain) |
-| **Contracts on Arc** | 10 Solidity contracts (Foundry): ledger, grounding, reputation bond, USYC vault, share, escrow, registry, bounty, agent-registry (ERC-8004), StableFX pool | see address table below |
+| **Contracts on Arc** | 11 Solidity contracts (Foundry): ledger, grounding, reputation bond, MockUSYC vault + CitationYieldUSYC, share, escrow, registry, bounty, agent-registry (ERC-8004), StableFX pool | see address table below |
 | **ERC-8004** (agent identity/reputation) | AgentRegistry8004 (`0x53aaF839…`, 5 agents registered) + ReputationBond (directional, slashable) | reputation bump `0xe635fd27…` (researcher → rep 1); bond post→slash proven (Foundry + on-chain) |
 | **proof-of-grounding** (Kuot novel) | keccak256 answer digest committed on-chain; only grounded authors paid | commit tx `0xad77a890…463c01ed` |
 | **reverse-x402 recursive** (Kuot novel) | Cite Kuot → fraction flows back to original authors, depth after depth | recursive split @ `$0.000013`/author |
 
 ## On-chain settlements (AttributionLedger)
-4 settled research queries → **27 author payouts** in real USDC (live read at `/dashboard/activity`).
+51 settled research queries → **376 author payouts** (361 distinct authors, ~$15.5 attributed) in
+real USDC, plus 285 authors holding ~$14.3 in escrow (live read at `/dashboard/activity` + `/api/stats`).
 - Example settle tx `0xd4f7988cc5ce80bcfa165eac7dcc9a6ac55f571ac0cebfe648b9df5418a7e36e`.
 - **Full pipeline proven live end-to-end** (Venice `live` mode → grounding → x402 paper-buy → settle):
   research query "direct air carbon capture" → synthesis + 10 web citations + 8 weighted author

@@ -26,8 +26,8 @@ grounded the answer get paid."
 
 ## 0:55–1:25 — Proof-of-grounding + settlement on Arc (Contracts + Innovation)
 **DO:** Open the **Activity** page (it shows real on-chain data: attestations + author payouts).
-**SAY:** "Every run is settled on-chain. Here are real attestations on Arc — three queries, nineteen
-author payouts already, in real USDC. Each settlement also commits a tamper-evident digest of the
+**SAY:** "Every run is settled on-chain. Here are real attestations on Arc — over fifty queries, more
+than three hundred author payouts already, in real USDC. Each settlement also commits a tamper-evident digest of the
 answer, so payment is bound to proof-of-grounding — you only pay a source once it's proven it
 grounded the answer."
 **DO:** Click one tx → ArcScan tab showing the on-chain transaction.
