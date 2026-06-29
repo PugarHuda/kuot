@@ -112,9 +112,11 @@ server.registerTool(
     inputSchema: { limit: z.number().int().min(1).max(100).optional() },
   },
   async ({ limit }) => {
-    const { status, body } = await jsonFetch(`/api/author${limit ? `?limit=${limit}` : ""}`, {});
+    // ponytail: reuse /api/activity's on-chain leaderboard (/api/author is a single-address lookup).
+    const { status, body } = await jsonFetch(`/api/activity`, {});
     if (status !== 200) return { isError: true, content: [{ type: "text", text: `authors failed (${status})` }] };
-    return { content: [{ type: "text", text: JSON.stringify(body, null, 2) }] };
+    const leaderboard = (body.leaderboard ?? []).slice(0, limit ?? 100);
+    return { content: [{ type: "text", text: JSON.stringify(leaderboard, null, 2) }] };
   },
 );
 
