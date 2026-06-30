@@ -52,3 +52,9 @@ mcp/node_modules/
 .vercel
 circle-recovery.txt
 recovery_file_*.dat
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

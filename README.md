@@ -66,6 +66,8 @@ npm run dev              # http://localhost:3000
 ```
 Contracts: `cd contracts && forge test` (109 Vitest + 59 Foundry green). Deploy with
 `forge script script/Deploy.s.sol` then `script/DeployKuot.s.sol` (see `DEPLOYED.md`).
+E2E: `npm run e2e` — 6 Playwright click-through tests against the live deploy (nav, docs,
+claim, research box, and the Cite-from-wallet button's no-wallet graceful failure).
 
 ## Reproduce the traction
 Drive real agent-to-agent payment volume yourself — an external agent probes the x402
