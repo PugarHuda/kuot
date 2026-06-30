@@ -163,8 +163,12 @@ test("CiteButton: clicking with no wallet fails gracefully (no crash, real error
 
 test("share page 'Run your own' navigates to research (real click)", async ({ page, request }) => {
   const id = await makeShare(request);
-  const resp = await page.goto(`/r/${id}`);
+  const resp = await page.goto(`/r/${id}`, { waitUntil: "domcontentloaded" });
   expect(resp?.ok()).toBeTruthy();
-  await page.getByRole("link", { name: /Run your own/i }).first().click();
+  // Wait for the link to actually render (on-chain share read can lag) before
+  // clicking — avoids a race where the click fires before the page hydrates.
+  const link = page.getByRole("link", { name: /Run your own/i }).first();
+  await expect(link).toBeVisible({ timeout: 15_000 });
+  await link.click();
   await expect(page).toHaveURL(/\/dashboard\/research/);
 });
