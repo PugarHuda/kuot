@@ -106,7 +106,7 @@ export default function Docs() {
 
           <H id="mesh">The agent mesh (A2A)</H>
           <p className="mt-3 text-sm leading-relaxed text-[var(--ink)]/80">
-            Five specialist agents, each a real on-chain principal in the ERC-8004 registry. The
+            Five on-chain principals in the ERC-8004 registry, working as specialist steps. The
             Researcher delegates strictly narrower scopes to specialists — authority only ever shrinks:
           </p>
           <ul className="mt-3 space-y-1.5 text-sm">
@@ -116,6 +116,7 @@ export default function Docs() {
               ["Citation-Matcher", "Venice embeddings → relevance-weighted payouts"],
               ["Fact-checker", "can reject a weak answer and force a revision round"],
               ["Summarizer", "condenses the verified result to a TL;DR"],
+              ["Adjudicator", "the agent itself splits the payout across sources by how much each grounded the answer, and sets the total USDC (embeddings are the fallback)"],
             ].map(([a, b]) => (
               <li key={a} className="rounded-md bg-[var(--paper-2)] px-3 py-2">
                 <b className="text-[var(--accent)]">{a}</b> — {b}
@@ -180,7 +181,7 @@ export default function Docs() {
           </ul>
           <p className="mt-3 text-sm text-[var(--ink)]/70">
             Plus live attestations on the <Link href="/dashboard/activity" className="link-accent">Activity</Link> page,
-            real <code>attestAndSplit</code> USDC transfers, and the x402 + Gateway facilitator. 168 tests (59 Foundry + 109 Vitest), no mocks in the critical path.
+            real <code>attestAndSplit</code> USDC transfers, and the x402 + Gateway facilitator. 168 tests (59 Foundry + 109 Vitest) plus 6 Playwright E2E browser click-throughs (<code>npm run e2e</code>), no mocks in the critical path.
           </p>
 
           <H id="tech">Tech &amp; tracks</H>

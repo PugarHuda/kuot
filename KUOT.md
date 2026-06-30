@@ -38,12 +38,15 @@ StableFXPool · MockUSYC + CitationYieldUSYC · ShareRegistry · AgentRegistry80
 4. **Directional reputation-as-collateral** — USDC bond slashable on a false citation (ERC-8004).
 
 ## How it maps to judging
-- **Agency** — multi-agent mesh + Fact-checker revise loop + agent decides what to buy, when to
-  settle, FX/yield routing, and gates payment on proof-of-grounding.
+- **Agency** — multi-agent mesh + Fact-checker revise loop + an **Adjudicator** step where the LLM
+  itself decides how the citation payment splits across sources AND the total USDC to pay (0.05–1.00;
+  embeddings are the fallback) + agent decides what to buy, when to settle, FX/yield routing, and gates
+  payment on proof-of-grounding.
 - **Traction** — real on-chain settlements (AuthorPaid events) + reverse-x402 sub-cent payouts +
   MCP other agents can pay; unclaimed → USYC so payments flow without supply-side onboarding.
 - **Circle tools** — Gateway · x402 · Agent Wallets · App Kit Swap · USYC · CCTP · Contracts · USDC/EURC.
 - **Innovation** — recursive reverse-x402 + proof-of-grounding + directional reputation bond.
 
 ## Tests
-109 Vitest + 59 Foundry green. `npm test` · `cd contracts && forge test`.
+109 Vitest + 59 Foundry green (168 unit + contract), plus 6 Playwright E2E browser click-throughs of
+the live UI. `npm test` · `cd contracts && forge test` · `npm run e2e`.

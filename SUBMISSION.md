@@ -49,6 +49,11 @@ Every number below is read live from Arc, not asserted:
   list** with pre-filled claim links (`?orcid=…` opens straight to their live balance) + mail-merge.
 - **Other agents can pay today:** the MCP server (`mcp/`) exposes `kuot_research_paid` (x402
   toll-booth) and `kuot_cite` (reverse-x402).
+- **External traction a judge can verify in ~60s:** the share page (`/r/[id]`) has a **Cite this answer
+  — pay from your wallet** button — any reader pays Kuot's reverse-x402 toll from their OWN wallet (one
+  on-chain USDC transfer on Arc). `GET /api/stats` exposes `externalPayers`/`externalPaidUSDC` = distinct
+  **non-operator** wallets that paid on-chain (the operator is excluded, so it can't be self-inflated).
+  Honest status: this is the **mechanism** — `externalPayers` is **0** until a real external wallet pays.
 
 ## Circle / Arc stack — what's real vs. honest about
 - **Circle Gateway nanopayment batching** — real `createGatewayMiddleware` verify+settle on Arc;
@@ -70,7 +75,10 @@ Every number below is read live from Arc, not asserted:
 
 ## Agentic sophistication
 Venice multi-agent mesh: Planner → parallel Readers → Synthesizer → Fact-checker revision loop →
-Summarizer, with embeddings-weighted relevance driving the payout split. The agent **self-prices**
+Summarizer → **Adjudicator** — an LLM step where the agent itself decides BOTH how the citation
+payment splits across the sources (by how much each grounded the answer) AND the total USDC to pay
+(clamped 0.05–1.00); embeddings-weighted relevance is the fallback. A genuine economic decision, not
+a heuristic. The agent **self-prices**
 its citation fee and recursive author-share by fact-checker confidence × grounding depth, and
 **bids per source** by rank/budget — then gates payment on an on-chain proof-of-grounding digest.
 
@@ -83,4 +91,5 @@ authors. **No runtime mocks**; the only stubs (USYC yield) are now labeled hones
 ## Repro
 `KUOT.md` (architecture) · `DEPLOYED.md` (addresses + proof txs) · `CIRCLE-STACK.md` (per-primitive
 proof) · `INTEGRATE.md` (adopt it) · `DEMO.md` (3-min script) · `FEEDBACK.md` (Circle/Arc DX).
-Tests: **109 Vitest + 59 Foundry green**. Drive traction yourself: `npm run traction`.
+Tests: **109 Vitest + 59 Foundry green** (168 unit + contract), plus **6 Playwright E2E** browser
+click-throughs of the live UI (`npm run e2e`). Drive traction yourself: `npm run traction`.

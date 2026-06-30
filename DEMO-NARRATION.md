@@ -22,7 +22,8 @@ parallel Readers, a Fact-checker — read it with Venice. It decides which paper
 pays for them with an x402 nanopayment on Arc. These are real decisions and real testnet USDC."
 **DO:** When results appear, point at the cited authors + payout split.
 **SAY:** "Out come the grounded authors, each with a share — only the ones whose work actually
-grounded the answer get paid."
+grounded the answer get paid. And the agent decides that split itself: an Adjudicator weighs how much
+each source grounded the answer and even sets the total it pays."
 
 ## 0:55–1:25 — Proof-of-grounding + settlement on Arc (Contracts + Innovation)
 **DO:** Open the **Activity** page (it shows real on-chain data: attestations + author payouts).
@@ -41,6 +42,9 @@ and settles the batch on Arc: watch the Gateway balance drop. And seventy percen
 flows recursively back to the original authors — at thirteen millionths of a dollar each. Being
 cited earns money; the citation graph pays itself, depth after depth."
 **DO:** Point at `"settled": true` and the per-author recursive split in the JSON.
+**DO (optional, judge-facing):** On a share page `/r/<id>`, click **"Cite this answer — pay from your
+wallet"** to pay the toll from your OWN wallet on Arc — you become a verifiable non-operator payer
+(`/api/stats` → `externalPayers`), traction a judge can generate live in ~60s and can't be self-seeded.
 
 ## 2:05–2:30 — Real yield + claim (USYC + ORCID)
 **DO:** Open **Claim earnings**; click **Demo verify (test ORCID)** → bind.

@@ -26,6 +26,13 @@ Built for the **Lepton Agents Hackathon — Canteen × Circle × Arc** (June 202
    payment flows recursively back to the original authors.
 
 ## Differentiators
+- **The agent decides the payout** — an Adjudicator LLM step splits the citation payment across the
+  sources by how much each actually grounded the answer, and sets the total USDC (clamped 0.05–1.00);
+  embedding/rank weighting is only the fallback. A genuine economic decision (`src/lib/orchestrator.ts`).
+- **Cite from your own wallet** — the public share page (`/r/[id]`) lets any reader pay Kuot's reverse-x402
+  toll from their OWN wallet (one on-chain USDC transfer on Arc, verified by the existing tx-hash acceptor).
+  `GET /api/stats` exposes `externalPayers`/`externalPaidUSDC` — distinct **non-operator** wallets that paid
+  on-chain (chain truth, excludes the operator). A judge can generate verifiable external traction in ~60s.
 - **Recursive reverse-x402** — being cited earns money; the citation graph pays itself, depth after depth.
 - **Proof-of-grounding before pay** — an on-chain digest; only grounding authors are paid.
 - **USYC-style yield** — unclaimed rewards accrue in a real ERC-4626 vault (a self-funded `MockUSYC`
@@ -51,7 +58,7 @@ addresses + the on-chain proof transactions.
 ```
 User → /research ──► Agent (pays papers via x402/Gateway on Arc)
                        │
-                       ├─ Planner → Readers ×N → Fact-checker → Summarizer   (Venice)
+                       ├─ Planner → Readers ×N → Fact-checker → Summarizer → Adjudicator   (Venice)
                        ├─ proof-of-grounding  → GroundingRegistry.commit(digest)
                        └─ settle → AttributionLedger.attestAndSplit ──► authors paid (USDC)
                                      │                                   └─ unclaimed → USYC yield

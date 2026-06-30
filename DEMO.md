@@ -21,7 +21,8 @@ Record at 1080p, captions on. Keep each beat tight — aim ~20s each.
 
 ## 0:50–1:25 — Proof-of-grounding + settlement on Arc (Contracts + innovation)
 - Show the result: synthesis + the grounded authors (note some citations were **dropped** —
-  only authors whose work grounded the answer get paid).
+  only authors whose work grounded the answer get paid). Call out the **Adjudicator**: the agent
+  itself decided how the payment splits across the sources AND the total USDC — not a fixed formula.
 - Click **Settle**. Cut to ArcScan: `attest` tx + the `GroundingRegistry.commit` tx (digest).
 - VO: "We commit a tamper-evident digest and pay only proven sources — closing the
   pay-then-maybe-delivered gap."
@@ -39,6 +40,9 @@ Record at 1080p, captions on. Keep each beat tight — aim ~20s each.
 - Show the 402 → pay → 200, and the **recursive split**: a fraction flows BACK to the original
   authors. VO: "Being cited earns money. The citation graph pays itself, depth after depth."
 - (Optional) show `ReputationBond.trustVector` — capital staked behind a route, slashable.
+- (Optional, judge-facing) Open a share page `/r/<id>` and click **"Cite this answer — pay from your
+  wallet"**: pay the toll from your OWN wallet in ~60s and become a **verifiable non-operator payer**
+  on Arc (`GET /api/stats` → `externalPayers`/`externalPaidUSDC`, chain truth that can't be self-seeded).
 
 ## 2:30–3:00 — Traction & close
 - Run it live: `npm run traction -- 5` — an external **buyer agent** pays the x402 toll-booth +

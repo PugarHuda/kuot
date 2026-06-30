@@ -23,7 +23,16 @@ async function makeShare(request: APIRequestContext): Promise<string> {
   });
   expect(res.ok(), `share POST should succeed (${res.status()})`).toBeTruthy();
   const json = await res.json();
-  return String(json.path).replace("/r/", "");
+  const id = String(json.path).replace("/r/", "");
+  // No KV → the share is published on-chain; wait until it's actually readable
+  // (the ?quote=1 endpoint 200s only once the publish is indexed) so the page
+  // render is deterministic instead of racing on-chain indexing lag.
+  for (let i = 0; i < 15; i++) {
+    const q = await request.get(`/api/summaries/${id}?quote=1`);
+    if (q.ok()) return id;
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+  return id; // proceed anyway; the page-level assertion will surface a real failure
 }
 
 test("landing page loads and shows the brand", async ({ page }) => {
@@ -57,14 +66,8 @@ test("research page renders an interactive query box", async ({ page }) => {
 
 test("CiteButton: clicking with no wallet fails gracefully (no crash, real error)", async ({ page, request }) => {
   const id = await makeShare(request);
-  // The on-chain publish may take a moment to index; retry the page load.
-  let loaded = false;
-  for (let i = 0; i < 6 && !loaded; i++) {
-    const resp = await page.goto(`/r/${id}`);
-    loaded = Boolean(resp?.ok()) && (await page.locator("body").innerText()).includes("Cite this answer");
-    if (!loaded) await page.waitForTimeout(2500);
-  }
-  expect(loaded, "share page with the Cite button should render").toBeTruthy();
+  const resp = await page.goto(`/r/${id}`);
+  expect(resp?.ok(), "share page should be 2xx").toBeTruthy();
 
   const cite = page.getByRole("button", { name: /Cite this answer/i });
   await expect(cite).toBeVisible();
@@ -79,13 +82,8 @@ test("CiteButton: clicking with no wallet fails gracefully (no crash, real error
 
 test("share page 'Run your own' navigates to research (real click)", async ({ page, request }) => {
   const id = await makeShare(request);
-  let loaded = false;
-  for (let i = 0; i < 6 && !loaded; i++) {
-    const resp = await page.goto(`/r/${id}`);
-    loaded = Boolean(resp?.ok()) && (await page.locator("body").innerText()).includes("Run your own");
-    if (!loaded) await page.waitForTimeout(2500);
-  }
-  expect(loaded).toBeTruthy();
+  const resp = await page.goto(`/r/${id}`);
+  expect(resp?.ok()).toBeTruthy();
   await page.getByRole("link", { name: /Run your own/i }).first().click();
   await expect(page).toHaveURL(/\/dashboard\/research/);
 });

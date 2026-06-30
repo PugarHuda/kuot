@@ -104,7 +104,7 @@ export default function Home() {
               img: "/step-pay.webp",
               n: "III",
               t: "Authors paid — then paid again",
-              d: "Every citation pays its author a nanopayment. Unclaimed shares sit in a USYC-style ERC-4626 vault until they claim with ORCID. When another agent cites Kuot, a fraction flows recursively back to the originals.",
+              d: "An Adjudicator agent decides how the payment splits across sources — and the total. Every citation pays its author a nanopayment; unclaimed shares sit in a USYC-style ERC-4626 vault until they claim with ORCID. When another agent cites Kuot, a fraction flows recursively back to the originals.",
               tag: "reverse-x402 · USYC",
             },
           ].map((s, i) => (

@@ -18,6 +18,7 @@ Every Circle/Arc primitive Kuot uses, with a real on-chain / API proof. All on *
 | **ERC-8004** (agent identity/reputation) | AgentRegistry8004 (`0x53aaF839…`, 5 agents registered) + ReputationBond (directional, slashable) | reputation bump `0xe635fd27…` (researcher → rep 1); bond post→slash proven (Foundry + on-chain) |
 | **proof-of-grounding** (Kuot novel) | keccak256 answer digest committed on-chain; only grounded authors paid | commit tx `0xad77a890…463c01ed` |
 | **reverse-x402 recursive** (Kuot novel) | Cite Kuot → fraction flows back to original authors, depth after depth | recursive split @ `$0.000013`/author |
+| **Cite-from-wallet** (external traction) | The share page `/r/[id]` has a "Cite this answer — pay from your wallet" button: any reader pays the toll from their OWN wallet (one on-chain USDC transfer to the collector, verified by the existing tx-hash acceptor). `GET /api/stats` → `externalPayers`/`externalPaidUSDC` = distinct **non-operator** wallets that paid on-chain | mechanism live; `externalPayers` reads **0** on-chain until a real external wallet pays (operator excluded, can't self-inflate) |
 
 ## On-chain settlements (AttributionLedger)
 67 settled research queries → **504 author payouts** (467 distinct authors, ~$20.3 attributed) in

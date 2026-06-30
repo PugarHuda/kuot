@@ -110,6 +110,7 @@ const SLIDES: { id: string; render: React.ReactNode }[] = [
             ["↳ Citation-Matcher", "Venice embeddings → relevance-weighted payouts"],
             ["↳ Fact-checker", "can REJECT → forces a Researcher revision"],
             ["↳ Summarizer", "smallest, shortest-lived sub-budget"],
+            ["↳ Adjudicator", "the agent itself splits the payout across sources + sets the total USDC"],
           ].map(([a, b], i) => (
             <li key={a} className="flex items-baseline gap-3 rounded-md bg-[var(--paper-2)] px-3 py-2" style={{ marginLeft: `${Math.min(i, 4) * 14}px` }}>
               <span className="font-medium text-[var(--ink)]">{a}</span>
@@ -280,7 +281,7 @@ const NARRATION: Record<string, string> = {
   permission:
     "And it has real agency. The agent runs from its own Circle Agent Wallet, under a spending cap it can never exceed. It decides which papers are worth buying, at sub-cent prices, thousands of times an hour. A budget it controls — not a script.",
   mesh:
-    "Under the hood it's a mesh, not a script. A Planner splits the question, parallel Readers answer their slices, a Citation-Matcher weights who gets paid, and a Fact-checker can reject and force a revision. Five real on-chain agents that earn reputation.",
+    "Under the hood it's a mesh, not a script. A Planner splits the question, parallel Readers answer their slices, a Citation-Matcher weights who gets paid, and a Fact-checker can reject and force a revision. Then an Adjudicator — the agent itself — decides how the payment splits across the sources, and how much to pay in total. Five real on-chain agents that earn reputation.",
   venice:
     "The agents' brain is Venice — private and uncensored. Five Venice endpoints in the main flow: chat, web search, embeddings, image, and text-to-speech. The embeddings don't just deduplicate — they weight who gets paid.",
   pay:
