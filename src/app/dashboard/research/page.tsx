@@ -980,6 +980,29 @@ export default function ResearchPage() {
                 </span>
               </div>
             ) : null}
+            {/ERC-7715 advanced permissions/i.test(grant.message) ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => {
+                    const box = document.querySelector('[data-tour="ask"]');
+                    box?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    (box?.querySelector("input") as HTMLInputElement | null)?.focus();
+                  }}
+                  className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-[11px] font-medium text-white transition hover:opacity-90"
+                >
+                  ↓ Continue to Research (no signature)
+                </button>
+                <button
+                  onClick={() => {
+                    setPrefund(true);
+                    setGrant({ status: "idle" });
+                  }}
+                  className="rounded-lg border border-[var(--rule)] px-3 py-1.5 text-[11px] font-medium hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                >
+                  Use “Lock upfront” instead (any wallet)
+                </button>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </Card>
