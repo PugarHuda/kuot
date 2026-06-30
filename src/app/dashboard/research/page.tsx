@@ -105,7 +105,9 @@ export default function ResearchPage() {
   // String-backed numeric inputs: a controlled <input type="number"> in React
   // keeps stale leading zeros ("000.1") because the parsed value doesn't change.
   // We sanitize the raw string and derive the number from it.
-  const [perDayInput, setPerDayInput] = useState("10");
+  // Default to the smallest preset (0.1) — it matches a budget chip, keeps the
+  // custodial "Lock budget" transfer small/safe by default, and is the typical run.
+  const [perDayInput, setPerDayInput] = useState("0.1");
   const [expiryHoursInput, setExpiryHoursInput] = useState("24");
   const perDay = Number(perDayInput) || 0;
   const expiryHours = Number(expiryHoursInput) || 0;
@@ -908,7 +910,7 @@ export default function ResearchPage() {
                 ? "Locking budget…"
                 : prefundState.status === "locked"
                   ? "✓ Budget locked"
-                  : "Lock budget (any wallet)"
+                  : `Lock ${perDay} USDC (any wallet)`
               : grant.status === "granting"
                 ? "Awaiting signature…"
                 : grant.status === "granted"

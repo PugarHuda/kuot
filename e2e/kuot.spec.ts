@@ -112,7 +112,8 @@ test("budget step: funding model toggles button between Flask grant and any-wall
   await page.goto("/dashboard/research");
   await expect(page.locator("body")).toContainText(/Set budget \(MetaMask Flask\)/i);
   await page.getByRole("button", { name: /Lock upfront/i }).click();
-  await expect(page.locator("body")).toContainText(/Lock budget \(any wallet\)/i);
+  // Custodial button shows the exact USDC amount it will transfer, on any wallet.
+  await expect(page.locator("body")).toContainText(/Lock [\d.]+ USDC \(any wallet\)/i);
   await page.getByRole("button", { name: /Non-custodial/i }).click();
   await expect(page.locator("body")).toContainText(/Set budget \(MetaMask Flask\)/i);
 });
