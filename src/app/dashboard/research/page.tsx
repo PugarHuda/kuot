@@ -687,8 +687,10 @@ export default function ResearchPage() {
 
       {/* Progress stepper */}
       {(() => {
-        const phase = grant.status !== "granted" ? 0 : research.status === "done" ? 2 : 1;
-        const steps = ["Set budget", "Research", "Settle & pay"];
+        // Progress reflects research too, not just the (optional, Flask-only) grant —
+        // a normal-wallet user who skips step 2 still advances by running research.
+        const phase = research.status === "done" ? 2 : research.status === "running" || grant.status === "granted" ? 1 : 0;
+        const steps = ["Set budget · optional", "Research", "Settle & pay"];
         return (
           <div data-tour="stepper" className="mb-8 flex flex-wrap items-center gap-1.5 text-[11px]">
             {steps.map((s, i) => (
@@ -773,8 +775,16 @@ export default function ResearchPage() {
       <Card>
         <StepHead n={2} title="Grant a USDC spending budget" />
         {grant.status !== "granted" ? (
+          <p className="mt-2 rounded-md border border-amber-300/60 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200">
+            <b>Optional — MetaMask Flask only.</b> This scoped budget uses ERC-7715 advanced permissions, which
+            need MetaMask Flask + the Advanced Permissions snap. On a normal wallet you can <b>skip this</b> and
+            go straight to <b>step 3 below</b> — the agent runs under its own operator budget and still pays the
+            cited authors on-chain.
+          </p>
+        ) : null}
+        {grant.status !== "granted" ? (
           <>
-            <p className="mt-1 text-xs text-neutral-500">
+            <p className="mt-2 text-xs text-neutral-500">
               One signature creates a scoped delegation — a <b>daily spending ceiling</b>, not an
               up-front charge. Nothing leaves your wallet now; the agent only spends a tiny micropayment
               (~0.01 USDC) per run when it buys a paper, and never beyond this cap.

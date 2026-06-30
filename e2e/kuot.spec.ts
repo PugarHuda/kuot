@@ -95,6 +95,15 @@ test("research page renders an interactive query box", async ({ page }) => {
   await expect(box).toHaveValue("graphene supercapacitor");
 });
 
+test("research page marks the ERC-7715 budget step as optional (no dead-end)", async ({ page }) => {
+  // Regression: a normal (non-Flask) wallet hit a dead-end on "Set budget" because
+  // wallet_requestExecutionPermissions doesn't exist. The step must be clearly
+  // optional so the user knows research works without it.
+  await page.goto("/dashboard/research");
+  await expect(page.locator("body")).toContainText(/Optional\s*[—-]\s*MetaMask Flask only/i);
+  await expect(page.locator("body")).toContainText(/Set budget\s*·\s*optional/i);
+});
+
 test("CiteButton: clicking with no wallet fails gracefully (no crash, real error)", async ({ page, request }) => {
   const id = await makeShare(request);
   const resp = await page.goto(`/r/${id}`);

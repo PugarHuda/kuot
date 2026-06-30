@@ -7,6 +7,8 @@ Record at 1080p, captions on. Keep each beat tight — aim ~20s each.
 
 > Pre-roll setup (not filmed): `.env` filled, contracts live on Arc (DEPLOYED.md), app on Vercel,
 > one funded Gateway balance. Have ArcScan (testnet.arcscan.app) open in a second tab.
+> Note: the in-app "Set budget" (ERC-7715) step is **MetaMask-Flask-only and optional** — on a normal
+> wallet skip it and go straight to "Ask a research question"; the agent runs under its own operator budget.
 
 ## 0:00–0:15 — Hook
 - On screen: the one-liner — *"Kuot: the recursive citation economy on Arc. Every AI answer
