@@ -104,6 +104,28 @@ test("research page marks the ERC-7715 budget step as optional (no dead-end)", a
   await expect(page.locator("body")).toContainText(/Set budget\s*·\s*optional/i);
 });
 
+test("cited page: ORCID lookup runs (invalid rejected, valid returns a real result)", async ({ page }) => {
+  await page.goto("/cited");
+  const input = page.getByPlaceholder("0000-0002-1825-0097");
+  const btn = page.getByRole("button", { name: /Check my earnings/i });
+  // Invalid format → friendly rejection, no crash.
+  await input.fill("not-an-orcid");
+  await btn.click();
+  await expect(page.getByText(/doesn.t look like an ORCID/i)).toBeVisible();
+  // Valid format → reaches a real /api/owed result (an owed amount or "none yet").
+  await input.fill("0000-0002-1825-0097");
+  await btn.click();
+  await expect(page.getByText(/waiting for you|No citations of your work yet/i)).toBeVisible({ timeout: 20_000 });
+});
+
+test("dashboard sidebar navigates on click (real nav click)", async ({ page }) => {
+  await page.goto("/dashboard");
+  await page.locator('a[href="/dashboard/activity"]').first().click();
+  await expect(page).toHaveURL(/\/dashboard\/activity/);
+  await page.locator('a[href="/dashboard/bounties"]').first().click();
+  await expect(page).toHaveURL(/\/dashboard\/bounties/);
+});
+
 test("CiteButton: clicking with no wallet fails gracefully (no crash, real error)", async ({ page, request }) => {
   const id = await makeShare(request);
   const resp = await page.goto(`/r/${id}`);

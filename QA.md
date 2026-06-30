@@ -7,7 +7,7 @@ Last run against production `https://kuot-azure.vercel.app` + the test suites. A
 |---|---|
 | Vitest (TS unit/integration) | **109 / 109 pass** |
 | Foundry (Solidity) | **59 / 59 pass** |
-| Playwright (E2E browser click-through, `npm run e2e`) | **19 / 19 pass** (12-page smoke + Cite-button + optional-budget guard + nav clicks) |
+| Playwright (E2E browser click-through, `npm run e2e`) | **21 / 21 pass** (12-page smoke + cited ORCID lookup + Cite-button + optional-budget guard + sidebar/nav clicks) |
 | `tsc --noEmit` | clean |
 | `next build` | compiles |
 
