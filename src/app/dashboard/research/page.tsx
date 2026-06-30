@@ -500,8 +500,51 @@ export default function ResearchPage() {
     }
   }
 
+  // Custodial "Lock upfront": commit the budget with a plain USDC transfer to the
+  // operator. No ERC-7715 — so this works on ANY wallet (Rabby, Coinbase, normal
+  // MetaMask), not just Flask. The operator auto-splits it to authors when a run
+  // finishes. Returns true once the lock tx is confirmed.
+  async function lockBudget(): Promise<boolean> {
+    if (prefundState.status === "locked" || prefundState.status === "done") return true;
+    const wc = await resolveWalletClient();
+    if (!wc || !wc.account) {
+      setPrefundState({ status: "error", message: "Wallet not ready — reconnect your wallet." });
+      return false;
+    }
+    const amount6 = BigInt(Math.round(perDay * 1e6));
+    setPrefundState({ status: "locking", amount6 });
+    try {
+      const lockTx = await wc.writeContract({
+        address: USDC[PERMISSION_CHAIN.id],
+        abi: erc20Abi,
+        functionName: "transfer",
+        args: [OPERATOR_ADDRESS, amount6],
+        account: wc.account,
+        chain: wc.chain,
+      });
+      await publicClient?.waitForTransactionReceipt({ hash: lockTx });
+      setPrefundState({ status: "locked", lockTx, amount6 });
+      return true;
+    } catch (e) {
+      const raw = e instanceof Error ? e.message : String(e);
+      setPrefundState({
+        status: "error",
+        message: /insufficient|exceeds balance/i.test(raw)
+          ? "Not enough USDC to lock the author pool. Lower the budget or fund your wallet."
+          : /unauthorized|json-rpc protocol|in-flight/i.test(raw)
+            ? "Your wallet rejected the lock (delegated account / RPC). Try a fresh wallet."
+            : raw,
+      });
+      return false;
+    }
+  }
+
   async function handleGrant(): Promise<boolean> {
     if (grant.status === "granting") return false; // guard against double-trigger
+    // Custodial funding model commits the budget with a plain transfer (any wallet),
+    // so the "Set budget" button works on Rabby/Coinbase/MetaMask, not just Flask.
+    // Only the non-custodial scoped delegation below needs ERC-7715 (Flask + snap).
+    if (prefund) return lockBudget();
     setGrant({ status: "granting" });
     const wc = await resolveWalletClient();
     if (!wc) {
@@ -582,38 +625,8 @@ export default function ResearchPage() {
       return;
     }
     if (prefund) {
-      if (prefundState.status !== "locked" && prefundState.status !== "done") {
-        const wc = await resolveWalletClient();
-        if (!wc || !wc.account) {
-          setPrefundState({ status: "error", message: "Wallet not ready — reconnect your wallet." });
-          return;
-        }
-        const amount6 = BigInt(Math.round(perDay * 1e6));
-        setPrefundState({ status: "locking", amount6 });
-        try {
-          const lockTx = await wc.writeContract({
-            address: USDC[PERMISSION_CHAIN.id],
-            abi: erc20Abi,
-            functionName: "transfer",
-            args: [OPERATOR_ADDRESS, amount6],
-            account: wc.account,
-            chain: wc.chain,
-          });
-          await publicClient?.waitForTransactionReceipt({ hash: lockTx });
-          setPrefundState({ status: "locked", lockTx, amount6 });
-        } catch (e) {
-          const raw = e instanceof Error ? e.message : String(e);
-          setPrefundState({
-            status: "error",
-            message: /insufficient|exceeds balance/i.test(raw)
-              ? "Not enough USDC to lock the author pool. Lower the budget or fund your wallet."
-              : /unauthorized|json-rpc protocol|in-flight/i.test(raw)
-                ? "Your wallet rejected the lock (delegated account / RPC). Try a fresh wallet."
-                : raw,
-          });
-          return;
-        }
-      }
+      const ok = await lockBudget(); // any-wallet custodial lock (no ERC-7715)
+      if (!ok) return;
     }
     // No budget-grant gate: the agent settles server-side, so research always runs.
     await handleResearch();
@@ -776,10 +789,12 @@ export default function ResearchPage() {
         <StepHead n={2} title="Grant a USDC spending budget" />
         {grant.status !== "granted" ? (
           <p className="mt-2 rounded-md border border-amber-300/60 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200">
-            <b>Optional — MetaMask Flask only.</b> This scoped budget uses ERC-7715 advanced permissions, which
-            need MetaMask Flask + the Advanced Permissions snap. On a normal wallet you can <b>skip this</b> and
-            go straight to <b>step 3 below</b> — the agent runs under its own operator budget and still pays the
-            cited authors on-chain.
+            <b>Optional.</b> The <b>non-custodial scoped budget</b> uses ERC-7715 advanced permissions, which need
+            MetaMask Flask + the Advanced Permissions snap. On any other wallet (Rabby, Coinbase, normal MetaMask)
+            you have two ways that work today: <b>(1)</b> skip this and go straight to <b>step 3</b> — the agent
+            runs under its own operator budget and still pays the cited authors on-chain; or <b>(2)</b> pick
+            <b> “Lock upfront”</b> in Funding model below — that’s a plain USDC transfer (no ERC-7715), so the
+            budget button works on <b>any wallet</b>.
           </p>
         ) : null}
         {grant.status !== "granted" ? (
@@ -879,14 +894,26 @@ export default function ResearchPage() {
           ) : null}
           <button
             onClick={handleGrant}
-            disabled={!isConnected || onWrongChain || grant.status === "granting" || grant.status === "granted"}
+            disabled={
+              !isConnected ||
+              onWrongChain ||
+              grant.status === "granting" ||
+              grant.status === "granted" ||
+              (prefund && (prefundState.status === "locking" || prefundState.status === "locked"))
+            }
             className="rounded-lg bg-emerald-600 px-4 py-2.5 text-xs font-medium text-white transition hover:bg-emerald-500 disabled:opacity-40"
           >
-            {grant.status === "granting"
-              ? "Awaiting signature…"
-              : grant.status === "granted"
-                ? "✓ Budget granted"
-                : "Set budget"}
+            {prefund
+              ? prefundState.status === "locking"
+                ? "Locking budget…"
+                : prefundState.status === "locked"
+                  ? "✓ Budget locked"
+                  : "Lock budget (any wallet)"
+              : grant.status === "granting"
+                ? "Awaiting signature…"
+                : grant.status === "granted"
+                  ? "✓ Budget granted"
+                  : "Set budget (MetaMask Flask)"}
           </button>
           {grant.status === "granted" ? (
             <>

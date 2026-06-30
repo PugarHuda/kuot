@@ -100,7 +100,9 @@ test("research page marks the ERC-7715 budget step as optional (no dead-end)", a
   // wallet_requestExecutionPermissions doesn't exist. The step must be clearly
   // optional so the user knows research works without it.
   await page.goto("/dashboard/research");
-  await expect(page.locator("body")).toContainText(/Optional\s*[—-]\s*MetaMask Flask only/i);
+  // The budget step must be clearly optional + explain the non-Flask alternatives.
+  await expect(page.locator("body")).toContainText(/ERC-7715 advanced permissions/i);
+  await expect(page.locator("body")).toContainText(/Lock upfront/i);
   await expect(page.locator("body")).toContainText(/Set budget\s*·\s*optional/i);
 });
 
