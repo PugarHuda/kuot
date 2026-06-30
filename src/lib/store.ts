@@ -16,6 +16,12 @@ import { gzipSync, gunzipSync } from "node:zlib";
 import { queryIdOf } from "./settlement";
 import { canReadOnChain, canWriteOnChain, publishOnChain, readOnChain } from "./sharechain";
 
+// In-memory record of what we last wrote per id, so a re-POST of identical content
+// (the cheapest gas-drain loop — same query id, same blob) skips the on-chain write.
+// ponytail: per-instance cache; cross-instance dups still cost one write each — the
+// on-chain read below is the cross-instance backstop. Upgrade to KV if it matters.
+const lastWritten = new Map<string, string>();
+
 /** gzip+base64 a JSON string (tagged so reads can detect compression). */
 function pack(json: string): string {
   return `gz:${gzipSync(Buffer.from(json, "utf8")).toString("base64")}`;
@@ -83,8 +89,16 @@ export async function putShared(id: string, value: unknown): Promise<void> {
     if (Buffer.byteLength(packed, "utf8") > MAX_ONCHAIN_BYTES) {
       throw new Error("result too large to publish on-chain — enable KV for unlimited sharing (see SHARE-SETUP.md)");
     }
+    // Idempotent: don't pay gas to re-write byte-identical content. Checks this
+    // instance's cache first, then the chain (covers a cold instance / re-share).
+    if (lastWritten.get(id) === packed) return;
+    if ((await readOnChain(id)) === packed) {
+      lastWritten.set(id, packed);
+      return;
+    }
     try {
       await publishOnChain(id, packed);
+      lastWritten.set(id, packed);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       if (/allowance|insufficient funds|exceeds/i.test(msg)) {
