@@ -46,4 +46,4 @@ StableFXPool · MockUSYC + CitationYieldUSYC · ShareRegistry · AgentRegistry80
 - **Innovation** — recursive reverse-x402 + proof-of-grounding + directional reputation bond.
 
 ## Tests
-102 Vitest + 59 Foundry green. `npm test` · `cd contracts && forge test`.
+108 Vitest + 59 Foundry green. `npm test` · `cd contracts && forge test`.
