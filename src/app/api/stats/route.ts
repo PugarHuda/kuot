@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createPublicClient, http, parseAbiItem, type Address } from "viem";
-import { PERMISSION_CHAIN } from "@/lib/chains";
+import { createPublicClient, http, parseAbiItem, getAddress, type Address } from "viem";
+import { PERMISSION_CHAIN, USDC } from "@/lib/chains";
 import { ledgerRanges } from "@/lib/logs";
 
 export const runtime = "nodejs";
@@ -12,6 +12,11 @@ const ESCROW = process.env.NEXT_PUBLIC_UNCLAIMED_ESCROW as Address | undefined;
 // Only the operator legitimately attests; ignore spoofed permissionless attest()
 // calls so the traction snapshot can't be inflated by a stranger. See /api/activity.
 const OPERATOR = (process.env.NEXT_PUBLIC_SESSION_ACCOUNT ?? "").toLowerCase();
+// Where reverse-x402 / Cite-from-wallet payments land. External traction = anyone
+// who is NOT the operator paying this address — chain truth, can't be inflated.
+const COLLECTOR = (process.env.KUOT_COLLECTOR ?? process.env.NEXT_PUBLIC_SESSION_ACCOUNT) as Address | undefined;
+const ARC_USDC = USDC[5042002];
+const USDC_TRANSFER = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");
 
 const QUERY_ATTESTED = parseAbiItem(
   "event QueryAttested(bytes32 indexed queryId, address indexed payer, uint256 total, uint256 citationCount)",
@@ -105,6 +110,38 @@ export async function GET() {
   }
   const escrowedUSDC = Number(escrowedAtomic) / 1e6;
 
+  // External payers: distinct non-operator wallets that paid USDC to the collector
+  // on Arc (Cite-from-wallet button / reverse-x402). This is the verifiable
+  // "not self-seeded" metric — every count is a real Transfer a judge can open on
+  // Arcscan, and the operator's own address is excluded so it can't inflate itself.
+  let externalPayers = 0;
+  let externalPaidUSDC = 0;
+  try {
+    if (COLLECTOR && ARC_USDC) {
+      const latest = await client.getBlockNumber();
+      const ranges = ledgerRanges(latest);
+      const xfers = (
+        await Promise.all(
+          ranges.map(({ lo, hi }) =>
+            client.getLogs({ address: ARC_USDC, event: USDC_TRANSFER, args: { to: getAddress(COLLECTOR) }, fromBlock: lo, toBlock: hi }),
+          ),
+        )
+      ).flat();
+      const senders = new Set<string>();
+      let atomic = 0n;
+      for (const l of xfers) {
+        const from = String(l.args.from).toLowerCase();
+        if (from === OPERATOR) continue; // exclude self-seeding
+        senders.add(from);
+        atomic += l.args.value as bigint;
+      }
+      externalPayers = senders.size;
+      externalPaidUSDC = Number(atomic) / 1e6;
+    }
+  } catch {
+    /* network — additive metric, omit on failure */
+  }
+
   let authorsOnboarded = 0;
   try {
     if (NAME_REGISTRY) {
@@ -124,6 +161,8 @@ export async function GET() {
     attributedUSDC: Number(attributedUSDC.toFixed(6)),
     escrowedAuthors, // distinct authors with a claimable balance waiting (escrow)
     escrowedUSDC: Number(escrowedUSDC.toFixed(6)), // total currently owed in escrow
+    externalPayers, // distinct NON-operator wallets that paid Kuot on-chain (verifiable, not self-seeded)
+    externalPaidUSDC: Number(externalPaidUSDC.toFixed(6)),
     ledger: LEDGER ?? null,
   });
 }

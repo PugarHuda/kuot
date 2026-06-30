@@ -91,10 +91,15 @@ export async function putShared(id: string, value: unknown): Promise<void> {
     }
     // Idempotent: don't pay gas to re-write byte-identical content. Checks this
     // instance's cache first, then the chain (covers a cold instance / re-share).
+    // Best-effort — a read RPC blip must NOT block a legit share, so fall through.
     if (lastWritten.get(id) === packed) return;
-    if ((await readOnChain(id)) === packed) {
-      lastWritten.set(id, packed);
-      return;
+    try {
+      if ((await readOnChain(id)) === packed) {
+        lastWritten.set(id, packed);
+        return;
+      }
+    } catch {
+      /* read failed — skip the optimization, publish normally */
     }
     try {
       await publishOnChain(id, packed);

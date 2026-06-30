@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getShared, isShareConfigured } from "@/lib/store";
 import { ResultView } from "@/components/ResultView";
+import { CiteButton } from "@/components/CiteButton";
 import type { ResearchResult } from "@/lib/agent";
 
 export const runtime = "nodejs";
@@ -65,6 +66,10 @@ export default async function SharedResultPage({ params }: { params: Promise<{ i
 
       <div className="mt-6">
         <ResultView result={result} />
+      </div>
+
+      <div className="mt-8">
+        <CiteButton queryId={queryId} />
       </div>
 
       <footer className="mt-10 flex items-center justify-between border-t border-[var(--rule)] pt-4 text-[11px] text-[var(--muted)]">

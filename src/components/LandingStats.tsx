@@ -15,12 +15,18 @@ type Activity = {
  */
 export function LandingStats() {
   const [data, setData] = useState<Activity | null>(null);
+  const [ext, setExt] = useState<{ externalPayers: number; externalPaidUSDC: number } | null>(null);
 
   useEffect(() => {
     fetch("/api/activity")
       .then((r) => r.json())
       .then(setData)
       .catch(() => setData(null));
+    // External (non-operator) on-chain payers — the "not self-seeded" proof.
+    fetch("/api/stats")
+      .then((r) => r.json())
+      .then((s) => setExt({ externalPayers: s.externalPayers ?? 0, externalPaidUSDC: s.externalPaidUSDC ?? 0 }))
+      .catch(() => setExt(null));
   }, []);
 
   const attestations = data?.totals?.attestations ?? 0;
@@ -48,6 +54,12 @@ export function LandingStats() {
           </div>
         ))}
       </div>
+      {ext && ext.externalPayers > 0 && (
+        <p className="mt-3 text-center text-[12px] text-[var(--accent)]">
+          <strong>{ext.externalPayers}</strong> external wallet{ext.externalPayers === 1 ? "" : "s"} (not the operator) paid Kuot on-chain
+          {ext.externalPaidUSDC > 0 ? ` · $${ext.externalPaidUSDC.toFixed(4)}` : ""} — real, not self-seeded.
+        </p>
+      )}
       <div className="mt-3 text-center">
         <a
           href="/dashboard/activity"

@@ -6,6 +6,7 @@ import { proveGrounding } from "@/lib/grounding";
 import { recursiveSplit } from "@/lib/recursive";
 import { selfPriceForSynthesis, type SelfPrice } from "@/lib/pricing";
 import { verifyPayment } from "@/lib/x402pay";
+import { USDC } from "@/lib/chains";
 import type { ResearchResult } from "@/lib/agent";
 
 export const runtime = "nodejs";
@@ -126,6 +127,22 @@ export async function GET(req: Request, ctx: { params: Promise<{ queryId: string
   // The agent self-prices this answer (confidence × grounding depth) — the 402
   // challenge and the recursive split both follow the agent's own quote.
   const price = selfPriceForSynthesis(result);
+
+  // Quote: non-secret price + payTo so a wallet UI (the Cite-from-wallet button)
+  // can build a plain USDC transfer without parsing the Gateway 402 body. payTo is
+  // already public via the 402 challenge; this just makes it easy to consume.
+  if (new URL(req.url).searchParams.get("quote") === "1") {
+    const payTo = (process.env.KUOT_COLLECTOR ?? process.env.NEXT_PUBLIC_SESSION_ACCOUNT ?? null) as string | null;
+    return NextResponse.json({
+      queryId,
+      payTo: payTo ? getAddress(payTo) : null,
+      asset: USDC[5042002],
+      priceUsdc6: price.priceUsdc6.toString(),
+      priceUSDC: Number(price.priceUsdc6) / 1e6,
+      priceDollars: price.priceDollars,
+      query: result.query,
+    });
+  }
 
   // Demo click-through: preview the unlocked content + recursive plan without paying.
   if (paymentHeader === "demo") {
