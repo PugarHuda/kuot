@@ -186,7 +186,7 @@ export default function Docs() {
 
           <H id="tech">Tech &amp; tracks</H>
           <p className="mt-3 text-sm leading-relaxed text-[var(--ink)]/80">
-            <b>Circle Agent Stack</b> (Agent Wallets, Gateway nanopayments, App Kit Swap) ·
+            <b>Circle Agent Stack</b> (Agent Wallets, Gateway nanopayments, on-chain StableFX pool) ·
             <b> Venice AI</b> (chat, web-search, embeddings, image, TTS) · <b>Circle Gateway</b> permissionless
             (batching, gas in USDC, Ed25519 webhooks) · <b>x402</b> · <b>CCTP V2</b> (Arc→Base burn+mint) · Next.js · viem · wagmi ·
             Foundry. Spans RFB-1 Autonomous Paying Agents, RFB-3 Agent-to-Agent, and RFB-6 Creator Monetization.

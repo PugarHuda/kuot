@@ -9,7 +9,7 @@ original authors, accruing USYC-style vault yield while unclaimed.*
 - **Chain:** Arc testnet (5042002), USDC-native gas, sub-second finality.
 - **Payments:** Circle Gateway nanopayments (`@circle-fin/x402-batching`) + x402.
 - **Wallets:** Circle Agent Wallets (`@circle-fin/developer-controlled-wallets`).
-- **FX:** Circle App Kit Swap (USDC↔EURC, `SwapChain.Arc_Testnet`).
+- **FX:** on-chain `StableFXPool` (USDC↔EURC) on Arc — App Kit Swap has no Arc route, so Kuot runs its own seeded pool.
 - **Yield:** USYC-style ERC-4626 vault (`MockUSYC` on testnet → USYC on mainnet).
 - **LLM:** Venice AI (chat + web search + embeddings).
 - **Contracts:** Solidity 0.8.24 / Foundry.
@@ -20,7 +20,7 @@ original authors, accruing USYC-style vault yield while unclaimed.*
 | Gateway nanopayment client | `src/lib/gateway.ts` |
 | Paper-pay (Gateway → fallback) | `src/lib/pay.ts` |
 | Circle Agent Wallet | `src/lib/agent-wallet.ts` |
-| StableFX (App Kit Swap) | `src/lib/fx.ts` |
+| StableFX (own Arc pool + EURC payout) | `src/lib/onchain-fx.ts`, `src/lib/eurc.ts` |
 | Proof-of-grounding | `src/lib/grounding.ts` + `contracts/src/GroundingRegistry.sol` |
 | Recursive reverse-x402 | `src/lib/recursive.ts` + `src/app/api/summaries/[queryId]/route.ts` |
 | Settlement | `src/lib/settlement.ts`, `src/app/api/settle/route.ts` |
@@ -44,7 +44,7 @@ StableFXPool · MockUSYC + CitationYieldUSYC · ShareRegistry · AgentRegistry80
   payment on proof-of-grounding.
 - **Traction** — real on-chain settlements (AuthorPaid events) + reverse-x402 sub-cent payouts +
   MCP other agents can pay; unclaimed → USYC so payments flow without supply-side onboarding.
-- **Circle tools** — Gateway · x402 · Agent Wallets · App Kit Swap · USYC · CCTP · Contracts · USDC/EURC.
+- **Circle tools** — Gateway · x402 · Agent Wallets · StableFX (own Arc pool) · USYC · CCTP · Contracts · USDC/EURC.
 - **Innovation** — recursive reverse-x402 + proof-of-grounding + directional reputation bond.
 
 ## Tests

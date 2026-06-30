@@ -12,7 +12,7 @@ Every Circle/Arc primitive Kuot uses, with a real on-chain / API proof. All on *
 | **CCTP V2** | Cross-chain USDC round-trip **proven end-to-end**: `depositForBurn` on Arc (domain 26→6) → Circle attestation → `receiveMessage` mint on Base. `node scripts/cctp-burn.mjs` + `cctp-mint.mjs` | burn `0x05b0cd2f…424ccd` (Arc) → **mint `0x62f3fabe1c9f4c425bcc9c83187b06ab8eb3ae634889b51315fdc2ab27dfbdcc` (Base Sepolia, success)** |
 | **USDC** | Native gas (18-dec) + ERC-20 payments (6-dec) throughout | all txs |
 | **EURC** | Multi-currency author payout — pay EU authors in EURC directly (no swap) | transfer `0x393469b110b0a0ae47d9cb2f9ce2d50c7cfcd8ff6468001547fbd28d45101062` (0.05 EURC) |
-| **StableFX swap (USDC↔EURC)** | App Kit code ready (`src/lib/fx.ts`); LIVE swap via Kuot's own on-chain `StableFXPool` on Arc → swap-then-pay (`payAuthorEurcViaSwap`) | swap 1 USDC → 0.917240 EURC, tx `0x01c2e1fefceb7ba9711c0e2042cb85d693ea67e09c3258f4c1f7d597b8930cef` |
+| **StableFX swap (USDC↔EURC)** | App Kit has no Arc route, so a LIVE swap runs via Kuot's own on-chain `StableFXPool` on Arc → swap-then-pay an EU author in euros (`onchain-fx.ts` + `payAuthorEurcViaSwap`, via `GET /api/dev/fx-swap?payTo=`) | swap 1 USDC → 0.917240 EURC, tx `0x01c2e1fefceb7ba9711c0e2042cb85d693ea67e09c3258f4c1f7d597b8930cef` |
 | **USYC** (tokenized treasury) | Unclaimed rewards accrue in a real ERC-4626 vault. NOTE: a **self-funded `MockUSYC` stand-in** on testnet (real USYC is institution-gated); the vault/redeem *mechanism* is real, the yield *source* is `simulateYield`, not treasuries | accrue 1.0 → vault +0.5 → redeem 1.5 (Foundry + on-chain) |
 | **Contracts on Arc** | 11 deployed Solidity contracts (Foundry): ledger, grounding, reputation bond, MockUSYC vault + CitationYieldUSYC, share, escrow, registry, bounty, agent-registry (ERC-8004), StableFX pool | see address table below |
 | **ERC-8004** (agent identity/reputation) | AgentRegistry8004 (`0x53aaF839…`, 5 agents registered) + ReputationBond (directional, slashable) | reputation bump `0xe635fd27…` (researcher → rep 1); bond post→slash proven (Foundry + on-chain) |
@@ -36,11 +36,12 @@ real USDC, plus 366 authors holding ~$18.1 in escrow (live read at `/dashboard/a
 
 ## StableFX swap — now LIVE via an on-chain pool ✅ (was the only gap)
 Circle's **App Kit Swap (StableFX USDC↔EURC)** has no route on Arc testnet (Circle-side; returns
-`No route available`), and our App Kit code (`src/lib/fx.ts`, matches circlefin/arc-stablecoin-fx) is
-ready for when a route ships. To make the swap **live now**, Kuot deploys its own on-chain
+`No route available`). To make the swap **live now**, Kuot deploys its own on-chain
 **`StableFXPool`** on Arc (`0x3B95B94BE1F0cAE3CFF64Ebdc82cB9397deDCEff`, seeded with USDC+EURC
 liquidity): an author who elects euros gets a REAL on-chain USDC→EURC swap, then the swapped EURC is
-transferred (`payAuthorEurcViaSwap` in `src/lib/eurc.ts`). No more bypass — the dollar→euro path is live.
+transferred (`swapUsdcToEurcOnArc` in `src/lib/onchain-fx.ts` + `payAuthorEurcViaSwap` in
+`src/lib/eurc.ts`, reachable via `GET /api/dev/fx-swap?from=USDC&payTo=<author>`). No bypass — the
+dollar→euro author payout is a real two-tx path.
 - **Live swap proof:** 1 USDC → **0.917240 EURC**, tx
   `0x01c2e1fefceb7ba9711c0e2042cb85d693ea67e09c3258f4c1f7d597b8930cef` (pool reserves moved USDC 5→6,
   EURC 5→4.083; operator EURC 14.95→15.867). Deploy tx of the pool + 8 Foundry tests (`StableFXPool.t.sol`).

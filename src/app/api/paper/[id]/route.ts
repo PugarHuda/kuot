@@ -18,6 +18,14 @@ export const runtime = "nodejs";
  */
 const PRICE_USDC_6 = 1_000n; // $0.001 — sub-cent nanopayment
 
+// Best-effort single-use marker for the on-chain tx-hash payment, per serverless
+// instance — same guard as /api/summaries. With the 120s recency window below it
+// stops a confirmed transfer being replayed across paper ids (or the same id). The
+// unlocked content is already-public OpenAlex data, so the residual cross-instance
+// window is low-risk, but this keeps replay protection consistent across the
+// verifyPayment callers (summaries had it; this sibling did not).
+const seenPaperTx = new Set<string>();
+
 export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
   const payTo = (process.env.NEXT_PUBLIC_SESSION_ACCOUNT as `0x${string}`) ??
@@ -44,12 +52,17 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     );
   }
 
-  // REAL on-chain verification: the tx must be a confirmed USDC Transfer to
-  // payTo of >= price. No header-shape stub (H1).
-  const ok = await verifyPayment(txHash, getAddress(payTo), PRICE_USDC_6);
-  if (!ok) {
-    return NextResponse.json({ error: "payment not verified on-chain" }, { status: 402 });
+  // REAL on-chain verification: the tx must be a confirmed, FRESH (<120s), single-use
+  // USDC Transfer to payTo of >= price. No header-shape stub (H1); no replay.
+  const key = txHash.toLowerCase();
+  if (seenPaperTx.has(key)) {
+    return NextResponse.json({ error: "payment already used (replay)" }, { status: 402 });
   }
+  const ok = await verifyPayment(txHash, getAddress(payTo), PRICE_USDC_6, 120);
+  if (!ok) {
+    return NextResponse.json({ error: "payment not verified on-chain (must be a fresh USDC transfer to payTo ≥ price)" }, { status: 402 });
+  }
+  seenPaperTx.add(key);
 
   // Real content, not a canned string: fetch the actual OpenAlex work the agent
   // paid to read (id is an OpenAlex work id / DOI). Abstract is reconstructed
