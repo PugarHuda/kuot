@@ -525,6 +525,12 @@ export default function ResearchPage() {
     const isTransientRpc = (m: string) =>
       /failed to fetch token balance and metadata|requested resource not found|rate.?limit|timeout|fetch failed|json-rpc protocol is not supported/i.test(m);
     const isUserReject = (m: string) => /user rejected|denied|user cancel/i.test(m);
+    // ERC-7715 wallet_requestExecutionPermissions only exists in MetaMask Flask with
+    // the Advanced Permissions snap. A normal wallet throws "method does not exist".
+    // The scoped budget is an enhancement — research runs WITHOUT it (the agent
+    // settles server-side under its own operator budget), so this isn't a dead end.
+    const isUnsupported = (m: string) =>
+      /requestExecutionPermissions.*(does ?n.?t? ?(exist|has)|not available)|doesn.?t has corresponding handler|method not found|method .* does not exist/i.test(m);
 
     let lastErr = "";
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -547,11 +553,15 @@ export default function ResearchPage() {
         if (!isTransientRpc(lastErr)) break; // non-transient → don't waste retries
       }
     }
-    const message = isTransientRpc(lastErr)
-      ? "Your wallet's Arc RPC keeps failing to read the USDC token (often a rate-limited public node). " +
-        "Fix it once: your wallet → Settings → Networks → Arc → RPC URL → https://ethereum-sepolia-rpc.publicnode.com, " +
-        "then click Grant again. (It's a wallet-side network setting, not this site.)"
-      : lastErr;
+    const message = isUnsupported(lastErr)
+      ? "Your wallet doesn’t support ERC-7715 advanced permissions (that needs MetaMask Flask + the Advanced Permissions snap). " +
+        "You don’t need it — skip this step and go straight to “Ask a research question” below: the agent runs under its own " +
+        "operator budget and pays the cited authors server-side. The per-wallet scoped budget is a Flask-only upgrade."
+      : isTransientRpc(lastErr)
+        ? "Your wallet's Arc RPC keeps failing to read the USDC token (often a rate-limited public node). " +
+          "Fix it once: your wallet → Settings → Networks → Arc → RPC URL → https://ethereum-sepolia-rpc.publicnode.com, " +
+          "then click Grant again. (It's a wallet-side network setting, not this site.)"
+        : lastErr;
     setGrant({ status: "error", message });
     return false;
   }
