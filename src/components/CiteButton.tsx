@@ -38,9 +38,32 @@ export function CiteButton({ queryId }: { queryId: string }) {
   const [txHash, setTxHash] = useState<string | null>(null);
   const [unlocked, setUnlocked] = useState<Unlocked | null>(null);
 
+  // Hand the tx hash to the reverse-x402 endpoint; it verifies the on-chain
+  // transfer (fresh, single-use, ≥ price) and unlocks. Arc finality is sub-second;
+  // retry a few times in case the receipt isn't indexed yet.
+  async function confirm(hash: string) {
+    setPhase("confirming");
+    let res: Response | null = null;
+    for (let i = 0; i < 8; i++) {
+      res = await fetch(`/api/summaries/${queryId}`, { headers: { "Payment-Signature": hash } });
+      if (res.ok) break;
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+    if (!res || !res.ok) throw new Error("Payment sent, but not confirmed yet — use the Arcscan link below or click again to retry confirming (you won't be charged twice).");
+    setUnlocked(await res.json());
+    setPhase("done");
+  }
+
   async function pay() {
     setErr(null);
     try {
+      // Already paid (a prior attempt timed out)? NEVER transfer again — just resume
+      // confirming with the existing tx hash. Prevents an accidental double-pay.
+      if (txHash) {
+        await confirm(txHash);
+        return;
+      }
+
       // 1) connect any injected wallet + ensure we're on Arc testnet.
       if (!isConnected) {
         const c = pickFlaskConnector(connectors);
@@ -54,9 +77,11 @@ export function CiteButton({ queryId }: { queryId: string }) {
       const q: Quote = await fetch(`/api/summaries/${queryId}?quote=1`).then((r) => r.json());
       if (!q.payTo) throw new Error("This deployment has no collector configured.");
 
-      // 3) one real USDC transfer to the collector on Arc.
+      // 3) one real USDC transfer to the collector on Arc. Pin chainId so wagmi
+      //    throws (rather than paying on the wrong chain) if we're somehow not on Arc.
       setPhase("paying");
       const hash = await writeContractAsync({
+        chainId: arcTestnet.id,
         address: getAddress(q.asset),
         abi: erc20Abi,
         functionName: "transfer",
@@ -64,19 +89,8 @@ export function CiteButton({ queryId }: { queryId: string }) {
       });
       setTxHash(hash);
 
-      // 4) hand the tx hash to the reverse-x402 endpoint; it verifies the on-chain
-      //    transfer (fresh, single-use, ≥ price) and unlocks. Arc finality is
-      //    sub-second; retry a few times in case the receipt isn't indexed yet.
-      setPhase("confirming");
-      let res: Response | null = null;
-      for (let i = 0; i < 8; i++) {
-        res = await fetch(`/api/summaries/${queryId}`, { headers: { "Payment-Signature": hash } });
-        if (res.ok) break;
-        await new Promise((r) => setTimeout(r, 1500));
-      }
-      if (!res || !res.ok) throw new Error("Payment sent, but not yet confirmed — refresh in a moment; your tx is on Arcscan.");
-      setUnlocked(await res.json());
-      setPhase("done");
+      // 4) confirm + unlock.
+      await confirm(hash);
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
       setPhase("error");
@@ -108,7 +122,15 @@ export function CiteButton({ queryId }: { queryId: string }) {
 
   const busy = phase === "quoting" || phase === "paying" || phase === "confirming";
   const label =
-    phase === "quoting" ? "Quoting…" : phase === "paying" ? "Confirm in wallet…" : phase === "confirming" ? "Confirming on Arc…" : "Cite this answer — pay from your wallet";
+    phase === "quoting"
+      ? "Quoting…"
+      : phase === "paying"
+        ? "Confirm in wallet…"
+        : phase === "confirming"
+          ? "Confirming on Arc…"
+          : txHash
+            ? "Retry confirmation (already paid — no second charge)"
+            : "Cite this answer — pay from your wallet";
 
   return (
     <div className="rounded-lg border border-[var(--rule)] p-4">
@@ -124,6 +146,14 @@ export function CiteButton({ queryId }: { queryId: string }) {
         {label}
       </button>
       {err && <p className="mt-2 text-[12px] text-red-600">{err}</p>}
+      {err && txHash && (
+        <p className="mt-1 text-[12px]">
+          <a href={`${ARCSCAN}${txHash}`} target="_blank" rel="noreferrer" className="link-accent underline">
+            your payment on Arcscan ↗
+          </a>{" "}
+          <span className="text-[var(--muted)]">— it’s on-chain; retry confirmation above, you won’t be charged again.</span>
+        </p>
+      )}
       <p className="mt-2 text-[11px] text-[var(--muted)]">
         Needs a little Arc testnet USDC (it’s also the gas token).{" "}
         <a href="https://faucet.circle.com" target="_blank" rel="noreferrer" className="link-accent underline">faucet ↗</a>
