@@ -180,7 +180,7 @@ export default function Docs() {
           </ul>
           <p className="mt-3 text-sm text-[var(--ink)]/70">
             Plus live attestations on the <Link href="/dashboard/activity" className="link-accent">Activity</Link> page,
-            real <code>attestAndSplit</code> USDC transfers, and the x402 + Gateway facilitator. 167 tests (59 Foundry + 108 Vitest), no mocks in the critical path.
+            real <code>attestAndSplit</code> USDC transfers, and the x402 + Gateway facilitator. 168 tests (59 Foundry + 109 Vitest), no mocks in the critical path.
           </p>
 
           <H id="tech">Tech &amp; tracks</H>

@@ -64,7 +64,7 @@ npm install
 cp .env.example .env     # fill ARC_RPC_URL, contract addresses, CIRCLE_*/VENICE_API_KEY
 npm run dev              # http://localhost:3000
 ```
-Contracts: `cd contracts && forge test` (108 Vitest + 59 Foundry green). Deploy with
+Contracts: `cd contracts && forge test` (109 Vitest + 59 Foundry green). Deploy with
 `forge script script/Deploy.s.sol` then `script/DeployKuot.s.sol` (see `DEPLOYED.md`).
 
 ## Reproduce the traction

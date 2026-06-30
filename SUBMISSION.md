@@ -83,4 +83,4 @@ authors. **No runtime mocks**; the only stubs (USYC yield) are now labeled hones
 ## Repro
 `KUOT.md` (architecture) · `DEPLOYED.md` (addresses + proof txs) · `CIRCLE-STACK.md` (per-primitive
 proof) · `INTEGRATE.md` (adopt it) · `DEMO.md` (3-min script) · `FEEDBACK.md` (Circle/Arc DX).
-Tests: **108 Vitest + 59 Foundry green**. Drive traction yourself: `npm run traction`.
+Tests: **109 Vitest + 59 Foundry green**. Drive traction yourself: `npm run traction`.

@@ -127,10 +127,14 @@ export function needsRevision(confidence: Confidence): boolean {
  * id; otherwise null (→ caller falls back to embedding-weighted payouts). Keeping
  * it all-or-nothing avoids mixing the LLM's 0-100 scale with the rank scale.
  */
+/** The agent may also decide the TOTAL it pays; clamped to this band (USDC). */
+export const ADJ_MIN_TOTAL = 0.05;
+export const ADJ_MAX_TOTAL = 1.0;
+
 export function parseAdjudication(
   text: string,
   workIds: string[],
-): { shares: Record<string, number>; why?: string } | null {
+): { shares: Record<string, number>; why?: string; total?: number } | null {
   if (!text) return null;
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
@@ -156,7 +160,12 @@ export function parseAdjudication(
   }
   if (positive === 0) return null; // model credited nothing usable → fall back
   const why = (obj as { why?: unknown }).why;
-  return { shares, why: typeof why === "string" ? why : undefined };
+  // The agent's own call on HOW MUCH to pay in total (not just the split). Clamped
+  // to a safe band so a hallucinated number can't drain or zero the settlement.
+  const tRaw = (obj as { total?: unknown }).total;
+  const t = typeof tRaw === "number" ? tRaw : typeof tRaw === "string" ? Number(tRaw) : NaN;
+  const total = Number.isFinite(t) && t > 0 ? Math.min(ADJ_MAX_TOTAL, Math.max(ADJ_MIN_TOTAL, t)) : undefined;
+  return { shares, why: typeof why === "string" ? why : undefined, total };
 }
 
 /** Max sub-questions the Planner may emit (bounds the Reader fan-out). */
@@ -530,6 +539,7 @@ export async function orchestrate(
   //    embeddings are the fallback. (Best-effort: any failure → fall back silently.) ──
   let adjudication: Record<string, number> | undefined;
   let adjudicationWhy: string | undefined;
+  let adjudicatedTotal: number | undefined;
   if (synthesis && works.length) {
     const list = works.map((w, i) => `${i + 1}. id=${w.id} — ${w.title}`).join("\n");
     const adjRes = await safeChat({
@@ -539,9 +549,11 @@ export async function orchestrate(
         {
           role: "system",
           content:
-            "You are the Adjudicator. Decide how a citation payment should be split across the listed sources, " +
-            "by how much each one ACTUALLY grounded the answer (a source that wasn't really used gets 0). " +
-            'Reply with STRICT JSON only, no prose: {"shares":{"<id>":<0-100>,...},"why":"<one short sentence>"}. ' +
+            "You are the Adjudicator. Decide (a) how a citation payment is SPLIT across the listed sources, " +
+            "by how much each ACTUALLY grounded the answer (a source that wasn't really used gets 0), and " +
+            `(b) the fair TOTAL USDC to pay all sources for this answer, between ${ADJ_MIN_TOTAL} and ${ADJ_MAX_TOTAL} — ` +
+            "more for a substantive, well-grounded answer, less for a thin or hedged one. " +
+            'Reply with STRICT JSON only, no prose: {"shares":{"<id>":<0-100>,...},"total":<usdc>,"why":"<one short sentence>"}. ' +
             "Use the exact ids given.",
         },
         { role: "user", content: `Question: ${query}\n\nAnswer:\n${synthesis.slice(0, 2000)}\n\nSources:\n${list}` },
@@ -551,6 +563,7 @@ export async function orchestrate(
     if (parsed) {
       adjudication = parsed.shares;
       adjudicationWhy = parsed.why;
+      adjudicatedTotal = parsed.total;
     }
     trace.push({
       agent: "factchecker",
@@ -558,7 +571,7 @@ export async function orchestrate(
       action: "allocate payout",
       status: parsed ? "ok" : "skipped",
       detail: parsed
-        ? `[${modelLabel(AGENT_MODELS.factcheck)}] The agent decided the payout split itself — ${(parsed.why ?? "weighted by how much each source grounded the answer").slice(0, 140)}`
+        ? `[${modelLabel(AGENT_MODELS.factcheck)}] The agent decided the split${parsed.total ? ` and a ${parsed.total.toFixed(2)} USDC total` : ""} itself — ${(parsed.why ?? "weighted by how much each source grounded the answer").slice(0, 140)}`
         : "Adjudicator output unusable — payouts fall back to embedding-weighted shares.",
     });
   }
@@ -591,6 +604,7 @@ export async function orchestrate(
     relevance,
     adjudication,
     adjudicationWhy,
-    recommendedSettleUSDC: settleForConfidence(confidence),
+    // The agent's OWN decided total when it gave one; the confidence formula is the fallback.
+    recommendedSettleUSDC: adjudicatedTotal ?? settleForConfidence(confidence),
   };
 }

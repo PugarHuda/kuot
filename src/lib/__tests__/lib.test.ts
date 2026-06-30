@@ -86,6 +86,14 @@ describe("parseAdjudication", () => {
     expect(parseAdjudication('{"shares":{"1":0,"2":0}}', ["1", "2"])).toBeNull();
     expect(parseAdjudication('{"nope":1}', ["1"])).toBeNull();
   });
+  it("reads the agent's decided total and clamps it to the safe band", () => {
+    expect(parseAdjudication('{"shares":{"1":100},"total":0.4}', ["1"])!.total).toBe(0.4);
+    // Over-band hallucination clamps down (no drain), under/zero/garbage → undefined (formula fallback).
+    expect(parseAdjudication('{"shares":{"1":100},"total":99}', ["1"])!.total).toBe(1.0);
+    expect(parseAdjudication('{"shares":{"1":100},"total":0.001}', ["1"])!.total).toBe(0.05);
+    expect(parseAdjudication('{"shares":{"1":100},"total":0}', ["1"])!.total).toBeUndefined();
+    expect(parseAdjudication('{"shares":{"1":100}}', ["1"])!.total).toBeUndefined();
+  });
 });
 
 describe("sanitizeQuery", () => {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { putShared, getShared, isShareConfigured, shareIdForQuery } from "@/lib/store";
 import { queryIdOf } from "@/lib/settlement";
+import { rateLimit, clientIp } from "@/lib/ratelimit";
 import type { ResearchResult } from "@/lib/agent";
 
 export const runtime = "nodejs";
@@ -56,6 +57,16 @@ function slimForShare(r: ResearchResult): ResearchResult {
  * line up.
  */
 export async function POST(req: Request) {
+  // Without KV, each share persists via an on-chain ShareRegistry tx on the
+  // operator's gas — throttle hard so a public caller can't drain gas or spam
+  // last-writer-wins overwrites of /r/<id> permalinks. (6/min/IP.)
+  const rl = rateLimit(`share:${clientIp(req)}`, 6, 60_000);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "rate limit — too many shares; retry shortly" },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfter) } },
+    );
+  }
   if (!isShareConfigured()) {
     return NextResponse.json(
       { error: "sharing not configured — set KV_REST_API_URL / KV_REST_API_TOKEN (see SHARE-SETUP.md)" },
