@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useAccount, useConnect, useDisconnect, usePublicClient, useWalletClient, useSwitchChain } from "wagmi";
-import { requestBudgetPermission, revokeBudget, type BudgetParams } from "@/lib/permissions";
 import { PERMISSION_CHAIN, USDC } from "@/lib/chains";
 import { ATTRIBUTION_LEDGER_ABI, queryIdOf } from "@/lib/settlement";
 import type { ResearchResult } from "@/lib/agent";
@@ -13,10 +12,8 @@ import { loadHistory, saveToHistory, removeFromHistory, type HistoryEntry } from
 import { pickFlaskConnector } from "@/lib/wagmi";
 import { DownloadableReceipt } from "@/components/DownloadableReceipt";
 import { CitedText } from "@/components/ResultView";
-import { FixSepoliaRpcButton } from "@/components/FixSepoliaRpcButton";
 import { GuidedTour, type TourStep } from "@/components/GuidedTour";
-import { sanitizeDecimal, sanitizeInteger } from "@/lib/format";
-import { saveGrant, loadGrant, clearGrant } from "@/lib/grant-store";
+import { sanitizeDecimal } from "@/lib/format";
 import { createWalletClient, custom, erc20Abi, type Chain, type WalletClient } from "viem";
 import { sepolia, baseSepolia } from "viem/chains";
 
@@ -42,12 +39,6 @@ type ReceiptState =
   | { status: "idle" }
   | { status: "generating" }
   | { status: "done"; image?: string; audioBase64?: string; degraded?: string }
-  | { status: "error"; message: string };
-
-type GrantState =
-  | { status: "idle" }
-  | { status: "granting" }
-  | { status: "granted"; context: unknown; expiryUnix: number; capUSDC: number }
   | { status: "error"; message: string };
 
 type FeedbackState =
@@ -108,13 +99,9 @@ export default function ResearchPage() {
   // Default to the smallest preset (0.1) — it matches a budget chip, keeps the
   // custodial "Lock budget" transfer small/safe by default, and is the typical run.
   const [perDayInput, setPerDayInput] = useState("0.1");
-  const [expiryHoursInput, setExpiryHoursInput] = useState("24");
   const perDay = Number(perDayInput) || 0;
-  const expiryHours = Number(expiryHoursInput) || 0;
-  const [grant, setGrant] = useState<GrantState>({ status: "idle" });
-  const [revoke, setRevoke] = useState<{ status: "idle" | "revoking" | "done" | "error"; tx?: string; message?: string }>({
-    status: "idle",
-  });
+  // Sub-budget windows in the A2A mesh visualization narrow from this base.
+  const expiryHours = 24;
 
   const [excludeSeen, setExcludeSeen] = useState(true);
   const [autoPay, setAutoPay] = useState(false);
@@ -190,15 +177,6 @@ export default function ResearchPage() {
     if (q) setQuery(q);
   }, []);
 
-  // Restore an active (unexpired) grant after navigation/refresh — the on-chain
-  // permission persists; this re-surfaces its banner + countdown.
-  useEffect(() => {
-    if (grant.status !== "idle") return;
-    const g = loadGrant(address);
-    if (g) setGrant({ status: "granted", context: g.context, expiryUnix: g.expiryUnix, capUSDC: g.capUSDC });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [address]);
-
   async function handleReceipt() {
     if (research.status !== "done") return;
     setReceipt({ status: "generating" });
@@ -254,7 +232,7 @@ export default function ResearchPage() {
   }, [research.status]);
 
   // Auto-pay: when enabled, settle authors directly the moment research finishes —
-  // honouring the budget you already committed when granting (opt-in, off by default).
+  // honouring the budget you already committed when locking (opt-in, off by default).
   useEffect(() => {
     if (research.status === "done" && autoPay && !prefund && payDirect.status === "idle" && redeem.status === "idle") {
       // Both rails are real: direct = attestAndSplit from your wallet (no fee);
@@ -307,7 +285,7 @@ export default function ResearchPage() {
     const relayChainObj: Chain = relayChain === baseSepolia.id ? baseSepolia : sepolia;
     try {
       // Relaying on a different chain (e.g. Base Arc for a far lower fee)?
-      // Switch the wallet to it first so the 7715 grant + relay land there.
+      // Switch the wallet to Arc first so the lock + relay land there.
       if (relayChain !== chainId) {
         await switchChainAsync({ chainId: relayChain as typeof sepolia.id | typeof baseSepolia.id });
       }
@@ -541,87 +519,16 @@ export default function ResearchPage() {
     }
   }
 
-  async function handleGrant(): Promise<boolean> {
-    if (grant.status === "granting") return false; // guard against double-trigger
-    // Custodial funding model commits the budget with a plain transfer (any wallet),
-    // so the "Set budget" button works on Rabby/Coinbase/MetaMask, not just Flask.
-    // Only the non-custodial scoped delegation below needs ERC-7715 (Flask + snap).
-    if (prefund) return lockBudget();
-    setGrant({ status: "granting" });
-    const wc = await resolveWalletClient();
-    if (!wc) {
-      setGrant({ status: "error", message: "Wallet not ready — reconnect your wallet and try again." });
-      return false;
-    }
-    const params: BudgetParams = {
-      sessionAccount: SESSION_ACCOUNT,
-      perPeriodUSDC: perDay,
-      // The spending period == the grant lifetime, so the cap is "X USDC for the
-      // whole Nh window" (matches the expiry) rather than a daily reset that could
-      // mismatch a non-24h expiry.
-      periodSeconds: Math.max(1, expiryHours) * 3600,
-      expiry: Math.floor(Date.now() / 1000) + expiryHours * 3600,
-      chainId: PERMISSION_CHAIN.id,
-    };
-    // The your wallet Snap reads the USDC token via the wallet's OWN network RPC,
-    // which on Arc is frequently rate-limited → "failed to fetch token
-    // balance and metadata". That error is usually transient, so retry a few
-    // times (with backoff) before surfacing the manual-RPC fix.
-    const isTransientRpc = (m: string) =>
-      /failed to fetch token balance and metadata|requested resource not found|rate.?limit|timeout|fetch failed|json-rpc protocol is not supported/i.test(m);
-    const isUserReject = (m: string) => /user rejected|denied|user cancel/i.test(m);
-    // ERC-7715 wallet_requestExecutionPermissions only exists in MetaMask Flask with
-    // the Advanced Permissions snap. A normal wallet throws "method does not exist".
-    // The scoped budget is an enhancement — research runs WITHOUT it (the agent
-    // settles server-side under its own operator budget), so this isn't a dead end.
-    const isUnsupported = (m: string) =>
-      /requestExecutionPermissions.*(does ?n.?t? ?(exist|has)|not available)|doesn.?t has corresponding handler|method not found|method .* does not exist/i.test(m);
-
-    let lastErr = "";
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        if (attempt > 0) {
-          setGrant({ status: "granting" });
-          await new Promise((r) => setTimeout(r, 1200 * attempt));
-        }
-        const granted = await requestBudgetPermission(wc, params);
-        setGrant({ status: "granted", context: granted, expiryUnix: params.expiry, capUSDC: params.perPeriodUSDC });
-        // Persist so the active budget survives navigation / refresh.
-        if (address) saveGrant({ wallet: address, context: granted, expiryUnix: params.expiry, capUSDC: params.perPeriodUSDC });
-        return true;
-      } catch (e) {
-        lastErr = e instanceof Error ? e.message : String(e);
-        if (isUserReject(lastErr)) {
-          setGrant({ status: "error", message: "You declined the permission request in your wallet." });
-          return false;
-        }
-        if (!isTransientRpc(lastErr)) break; // non-transient → don't waste retries
-      }
-    }
-    const message = isUnsupported(lastErr)
-      ? "Your wallet doesn’t support ERC-7715 advanced permissions (that needs MetaMask Flask + the Advanced Permissions snap). " +
-        "You don’t need it — skip this step and go straight to “Ask a research question” below: the agent runs under its own " +
-        "operator budget and pays the cited authors server-side. The per-wallet scoped budget is a Flask-only upgrade."
-      : isTransientRpc(lastErr)
-        ? "Your wallet's Arc RPC keeps failing to read the USDC token (often a rate-limited public node). " +
-          "Fix it once: your wallet → Settings → Networks → Arc → RPC URL → https://ethereum-sepolia-rpc.publicnode.com, " +
-          "then click Grant again. (It's a wallet-side network setting, not this site.)"
-        : lastErr;
-    setGrant({ status: "error", message });
-    return false;
-  }
-
   /**
-   * "Grant/Lock & research" — one click from the Ask box.
-   * - prefund OFF (default, non-custodial): grant the Agent Wallet policy budget if needed, then run.
-   * - prefund ON (Lock-upfront upfront): transfer the author pool to the operator NOW
-   *   (locks it), then run; authors are auto-split from that pool when the run finishes.
+   * Run the query. Research needs no budget and no signature — the agent settles
+   * server-side under its own operator budget (works on any wallet). If the user
+   * chose to lock a budget upfront (custodial, any wallet), lock it first, then run.
    */
   async function handleAsk() {
     if (!query.trim()) return;
-    // Kuot research runs server-side (the agent pays via its own Circle Agent Wallet),
-    // so anyone can run a query immediately — no wallet connect or budget grant needed.
-    // The optional lock-upfront / grant paths below only apply when a wallet is connected.
+    // Research runs server-side (the agent pays via its own Circle Agent Wallet),
+    // so anyone can run a query immediately — no wallet connect or budget needed.
+    // The optional lock-upfront path below only applies when a wallet is connected.
     if (!isConnected) {
       await handleResearch();
       return;
@@ -666,46 +573,23 @@ export default function ResearchPage() {
     }
   }
 
-  /** Cancel the active budget on-chain (disableDelegation on the DelegationManager). */
-  async function handleRevoke() {
-    if (grant.status !== "granted" || revoke.status === "revoking") return;
-    setRevoke({ status: "revoking" });
-    const wc = await resolveWalletClient();
-    if (!wc) {
-      setRevoke({ status: "error", message: "Wallet not ready — reconnect your wallet." });
-      return;
-    }
-    try {
-      const ctx = grant.context as Array<{ delegationManager?: `0x${string}` }> | undefined;
-      const dm = ctx?.[0]?.delegationManager;
-      if (!dm) throw new Error("delegationManager not found in granted context");
-      const tx = await revokeBudget(wc, { permissionContext: grant.context, delegationManager: dm });
-      setRevoke({ status: "done", tx });
-      setGrant({ status: "idle" }); // clears the countdown; budget no longer redeemable
-      clearGrant();
-    } catch (e) {
-      const raw = e instanceof Error ? e.message : String(e);
-      setRevoke({ status: "error", message: /rejected|denied/i.test(raw) ? "You declined the revoke in your wallet." : raw });
-    }
-  }
-
   return (
     <main className="mx-auto w-full max-w-3xl px-8 py-10">
       <header className="mb-8">
         <p className="text-[11px] uppercase tracking-[0.15em] text-[var(--accent)]">Agent</p>
         <h1 className="serif mt-1 text-3xl font-semibold tracking-tight">Research</h1>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--ink)]/70">
-          Grant one scoped budget — the agent buys papers, reads with Venice, and splits USDC back to
-          every author it cites. Gas-free, non-custodial.
+          The agent buys papers, reads with Venice, and splits USDC back to every author it cites —
+          gas-free. Set an optional budget, or just ask a question.
         </p>
       </header>
 
       {/* Progress stepper */}
       {(() => {
-        // Progress reflects research too, not just the (optional, Flask-only) grant —
-        // a normal-wallet user who skips step 2 still advances by running research.
-        const phase = research.status === "done" ? 2 : research.status === "running" || grant.status === "granted" ? 1 : 0;
-        const steps = ["Set budget · optional", "Research", "Settle & pay"];
+        // The budget step is optional, so progress is driven by research/lock state.
+        const phase =
+          research.status === "done" ? 2 : research.status === "running" || prefundState.status === "locked" ? 1 : 0;
+        const steps = ["Budget · optional", "Research", "Settle & pay"];
         return (
           <div data-tour="stepper" className="mb-8 flex flex-wrap items-center gap-1.5 text-[11px]">
             {steps.map((s, i) => (
@@ -786,223 +670,86 @@ export default function ResearchPage() {
         ) : null}
       </Card>
 
-      {/* 2. Grant */}
+      {/* 2. Budget (optional · any wallet) */}
       <Card>
-        <StepHead n={2} title="Grant a USDC spending budget" />
-        {grant.status !== "granted" ? (
-          <p className="mt-2 rounded-md border border-amber-300/60 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200">
-            <b>Optional.</b> The <b>non-custodial scoped budget</b> uses ERC-7715 advanced permissions, which need
-            MetaMask Flask + the Advanced Permissions snap. On any other wallet (Rabby, Coinbase, normal MetaMask)
-            you have two ways that work today: <b>(1)</b> skip this and go straight to <b>step 3</b> — the agent
-            runs under its own operator budget and still pays the cited authors on-chain; or <b>(2)</b> pick
-            <b> “Lock upfront”</b> in Funding model below — that’s a plain USDC transfer (no ERC-7715), so the
-            budget button works on <b>any wallet</b>.
+        <StepHead n={2} title="Set a budget (optional)" />
+        <p className="mt-2 rounded-md border border-[var(--rule)] bg-[var(--paper-2)] px-3 py-2 text-[11px] text-[var(--ink)]/75">
+          <b>You can skip this.</b> Leave it and the agent runs under its own operator budget — works on
+          <b> any wallet</b>, no signature, and still pays the cited authors on-chain. The amount below just
+          tunes how deep each run goes. To commit your own USDC instead, <b>lock a budget upfront</b> (a plain
+          transfer that works on any wallet).
+        </p>
+        <p className="mt-2 rounded-md bg-[var(--accent-soft)] px-3 py-2 text-[11px] text-[var(--ink)]/75">
+          💡 A bigger budget buys <b>deeper research</b>: it scales the agent fan-out
+          ({perDay >= 16 ? 5 : perDay >= 8 ? 3 : 2} parallel Readers at {perDay} USDC) and pays cited
+          authors a larger share — so more budget = more thorough answers + more generous payouts.
+        </p>
+        <div className="mt-3">
+          <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-[var(--muted)]">
+            Budget per run
           </p>
-        ) : null}
-        {grant.status !== "granted" ? (
-          <>
-            <p className="mt-2 text-xs text-neutral-500">
-              One signature creates a scoped delegation — a <b>daily spending ceiling</b>, not an
-              up-front charge. Nothing leaves your wallet now; the agent only spends a tiny micropayment
-              (~0.01 USDC) per run when it buys a paper, and never beyond this cap.
-            </p>
-            <p className="mt-2 rounded-md bg-[var(--accent-soft)] px-3 py-2 text-[11px] text-[var(--ink)]/75">
-              💡 A bigger budget buys <b>deeper research</b>: it scales the agent fan-out
-              ({perDay >= 16 ? 5 : perDay >= 8 ? 3 : 2} parallel Readers at {perDay} USDC) and pays cited
-              authors a larger share — so more budget = more thorough answers + more generous payouts.
-            </p>
-          </>
-        ) : null}
-        {grant.status !== "granted" ? (
-          <div className="mt-3">
-            <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-[var(--muted)]">
-              Budget for this grant (the agent can spend up to this over the {expiryHours}h window)
-            </p>
-            <div className="flex flex-wrap items-center gap-1.5">
-              {[0.1, 0.5, 1, 2].map((v) => (
-                <button
-                  key={v}
-                  onClick={() => setPerDayInput(String(v))}
-                  className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
-                    perDay === v
-                      ? "border-[var(--accent)] bg-[var(--accent)] text-white"
-                      : "border-[var(--rule)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                  }`}
-                >
-                  {v} USDC
-                </button>
-              ))}
-              <span className="ml-1 inline-flex items-center gap-1 text-xs text-[var(--muted)]">
-                or
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={perDayInput}
-                  onChange={(e) => setPerDayInput(sanitizeDecimal(e.target.value))}
-                  aria-label="Custom USDC budget"
-                  className="w-16 rounded-md border border-neutral-300 bg-transparent px-2 py-1.5 text-xs dark:border-neutral-700"
-                />
-                USDC
-              </span>
-            </div>
-            <p className="mt-2 text-[11px] text-[var(--muted)]">
-              This budget funds ≈ <b className="text-[var(--ink)]">{papers} papers/run</b> ·{" "}
-              <b className="text-[var(--ink)]">{perDay >= 16 ? 5 : perDay >= 8 ? 3 : 2} parallel Readers</b> · pays cited
-              authors each run · ~<b className="text-[var(--ink)]">{Math.max(1, Math.floor(perDay / 0.01))}</b> runs over the {expiryHours}h window.
-            </p>
-
-            {/* Funding model — a choice made BEFORE granting/locking. */}
-            <div className="mt-3">
-              <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-[var(--muted)]">Funding model</p>
-              <div className="grid gap-2 sm:grid-cols-2">
-                <button
-                  onClick={() => setPrefund(false)}
-                  className={`rounded-lg border p-2.5 text-left text-[11px] transition ${
-                    !prefund ? "border-[var(--accent)] bg-[var(--accent-soft)]" : "border-[var(--rule)] hover:border-[var(--accent)]/50"
-                  }`}
-                >
-                  <span className="font-medium">{!prefund ? "● " : "○ "}Non-custodial <span className="text-[var(--muted)]">(default)</span></span>
-                  <span className="mt-0.5 block text-[10px] text-[var(--muted)]">Set a spending ceiling — funds stay in your wallet until the split. Settle later (direct or Gateway) or auto-pay.</span>
-                </button>
-                <button
-                  onClick={() => setPrefund(true)}
-                  className={`rounded-lg border p-2.5 text-left text-[11px] transition ${
-                    prefund ? "border-amber-400 bg-amber-50 dark:bg-amber-950/30" : "border-[var(--rule)] hover:border-amber-400/50"
-                  }`}
-                >
-                  <span className="font-medium">
-                    {prefund ? "● " : "○ "}Lock upfront{" "}
-                    <span className="rounded bg-amber-100 px-1 py-0.5 text-[9px] text-amber-700 dark:bg-amber-950 dark:text-amber-300">custodial</span>
-                  </span>
-                  <span className="mt-0.5 block text-[10px] text-[var(--muted)]">Lock-upfront: lock {perDay} USDC to the operator now, auto-split to authors when the run finishes.</span>
-                </button>
-              </div>
-            </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {[0.1, 0.5, 1, 2].map((v) => (
+              <button
+                key={v}
+                onClick={() => setPerDayInput(String(v))}
+                className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+                  perDay === v
+                    ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+                    : "border-[var(--rule)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                }`}
+              >
+                {v} USDC
+              </button>
+            ))}
+            <span className="ml-1 inline-flex items-center gap-1 text-xs text-[var(--muted)]">
+              or
+              <input
+                type="text"
+                inputMode="decimal"
+                value={perDayInput}
+                onChange={(e) => setPerDayInput(sanitizeDecimal(e.target.value))}
+                aria-label="Custom USDC budget"
+                className="w-16 rounded-md border border-neutral-300 bg-transparent px-2 py-1.5 text-xs dark:border-neutral-700"
+              />
+              USDC
+            </span>
           </div>
-        ) : null}
-        <div className="mt-4 flex flex-wrap items-end gap-4">
-          {grant.status !== "granted" ? (
-            <>
-              <Field label="Expires in (h)">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={expiryHoursInput}
-                  onChange={(e) => setExpiryHoursInput(sanitizeInteger(e.target.value))}
-                  className="w-24 rounded-md border border-neutral-300 bg-transparent px-2 py-1.5 dark:border-neutral-700"
-                />
-              </Field>
-            </>
-          ) : null}
+          <p className="mt-2 text-[11px] text-[var(--muted)]">
+            Funds ≈ <b className="text-[var(--ink)]">{papers} papers/run</b> ·{" "}
+            <b className="text-[var(--ink)]">{perDay >= 16 ? 5 : perDay >= 8 ? 3 : 2} parallel Readers</b> · pays cited
+            authors each run.
+          </p>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
           <button
-            onClick={handleGrant}
-            disabled={
-              !isConnected ||
-              onWrongChain ||
-              grant.status === "granting" ||
-              grant.status === "granted" ||
-              (prefund && (prefundState.status === "locking" || prefundState.status === "locked"))
-            }
+            onClick={() => {
+              setPrefund(true);
+              void lockBudget();
+            }}
+            disabled={!isConnected || onWrongChain || prefundState.status === "locking" || prefundState.status === "locked"}
             className="rounded-lg bg-emerald-600 px-4 py-2.5 text-xs font-medium text-white transition hover:bg-emerald-500 disabled:opacity-40"
           >
-            {prefund
-              ? prefundState.status === "locking"
-                ? "Locking budget…"
-                : prefundState.status === "locked"
-                  ? "✓ Budget locked"
-                  : `Lock ${perDay} USDC (any wallet)`
-              : grant.status === "granting"
-                ? "Awaiting signature…"
-                : grant.status === "granted"
-                  ? "✓ Budget granted"
-                  : "Set budget (MetaMask Flask)"}
+            {prefundState.status === "locking"
+              ? "Locking budget…"
+              : prefundState.status === "locked"
+                ? "✓ Budget locked"
+                : `Lock ${perDay} USDC (any wallet)`}
           </button>
-          {grant.status === "granted" ? (
-            <>
-              <button
-                onClick={handleRevoke}
-                disabled={revoke.status === "revoking"}
-                className="rounded-lg border border-red-300 px-3 py-2.5 text-[11px] font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-950/30"
-              >
-                {revoke.status === "revoking" ? "Revoking…" : "Revoke on-chain"}
-              </button>
-              <button
-                onClick={() => {
-                  setGrant({ status: "idle" });
-                  setRevoke({ status: "idle" });
-                  clearGrant();
-                }}
-                className="rounded-lg border border-[var(--rule)] px-3 py-2.5 text-[11px] font-medium hover:border-[var(--accent)] hover:text-[var(--accent)]"
-              >
-                Grant new budget
-              </button>
-            </>
-          ) : null}
+          <button
+            onClick={() => {
+              const box = document.querySelector('[data-tour="ask"]');
+              box?.scrollIntoView({ behavior: "smooth", block: "center" });
+              (box?.querySelector("input") as HTMLInputElement | null)?.focus();
+            }}
+            className="rounded-lg border border-[var(--rule)] px-4 py-2.5 text-[11px] font-medium hover:border-[var(--accent)] hover:text-[var(--accent)]"
+          >
+            ↓ Skip — just research (no signature)
+          </button>
         </div>
-        {grant.status === "granted" ? (
-          <div data-tour="budget">
-            <GrantStatus expiryUnix={grant.expiryUnix} capUSDC={grant.capUSDC} />
-          </div>
-        ) : null}
-        {revoke.status === "done" ? (
-          <p className="mt-2 text-[11px] text-emerald-600">
-            ✓ Budget revoked on-chain —{" "}
-            <a
-              href={`https://testnet.arcscan.app/tx/${revoke.tx}`}
-              target="_blank"
-              rel="noreferrer"
-              className="underline"
-            >
-              view tx
-            </a>
-            . The agent can no longer spend it.
-          </p>
-        ) : null}
-        {revoke.status === "error" ? <p className="mt-2 text-[11px] text-red-600">{revoke.message}</p> : null}
-        {grant.status === "granted" ? (
-          <details className="mt-4">
-            <summary className="cursor-pointer text-[11px] text-[var(--muted)] hover:text-[var(--accent)]">
-              View raw permission context 
-            </summary>
-            <pre className="mt-2 max-h-48 overflow-auto rounded-md bg-neutral-100 p-3 text-[11px] dark:bg-neutral-900">
-              {JSON.stringify(grant.context, bigintReplacer, 2)}
-            </pre>
-          </details>
-        ) : null}
-        {grant.status === "error" ? (
-          <div className="mt-3 space-y-2">
-            <ErrorBox>{grant.message}</ErrorBox>
-            {/rpc|token balance|chain|fetch|infura/i.test(grant.message) ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <FixSepoliaRpcButton />
-                <span className="text-[10px] text-[var(--muted)]">
-                  One click adds a working Arc RPC to your wallet — no manual network form.
-                </span>
-              </div>
-            ) : null}
-            {/ERC-7715 advanced permissions/i.test(grant.message) ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={() => {
-                    const box = document.querySelector('[data-tour="ask"]');
-                    box?.scrollIntoView({ behavior: "smooth", block: "center" });
-                    (box?.querySelector("input") as HTMLInputElement | null)?.focus();
-                  }}
-                  className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-[11px] font-medium text-white transition hover:opacity-90"
-                >
-                  ↓ Continue to Research (no signature)
-                </button>
-                <button
-                  onClick={() => {
-                    setPrefund(true);
-                    setGrant({ status: "idle" });
-                  }}
-                  className="rounded-lg border border-[var(--rule)] px-3 py-1.5 text-[11px] font-medium hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                >
-                  Use “Lock upfront” instead (any wallet)
-                </button>
-              </div>
-            ) : null}
+        {prefundState.status === "error" ? (
+          <div className="mt-3">
+            <ErrorBox>{prefundState.message}</ErrorBox>
           </div>
         ) : null}
       </Card>
@@ -1071,7 +818,6 @@ export default function ResearchPage() {
             onClick={handleAsk}
             disabled={
               research.status === "running" ||
-              grant.status === "granting" ||
               prefundState.status === "locking" ||
               !query.trim()
             }
@@ -1081,13 +827,11 @@ export default function ResearchPage() {
               ? "Researching…"
               : prefundState.status === "locking"
                 ? "Locking…"
-                : grant.status === "granting"
-                  ? "Granting…"
-                  : prefund
-                    ? prefundState.status === "locked" || prefundState.status === "done"
-                      ? "❝ Research"
-                      : `🔒 Lock ${perDay} USDC & research`
-                    : "❝ Research"}
+                : prefund
+                  ? prefundState.status === "locked" || prefundState.status === "done"
+                    ? "❝ Research"
+                    : `🔒 Lock ${perDay} USDC & research`
+                  : "❝ Research"}
           </button>
         </div>
 
@@ -1256,10 +1000,11 @@ export default function ResearchPage() {
                 ○ x402 skipped (agent unfunded)
               </span>
             )}
-            {/* Budget CAP (granted ceiling) vs USED (this run's x402 micropayment). */}
+            {/* Budget CAP (locked ceiling) vs USED (this run's x402 micropayment). */}
             {(() => {
               const used = research.result.x402?.paid ? Number(research.result.x402.amountUSDC) : 0;
-              const cap = grant.status === "granted" ? grant.capUSDC : null;
+              const cap =
+                prefundState.status === "locked" && prefundState.amount6 ? Number(prefundState.amount6) / 1e6 : null;
               return (
                 <div className="rounded-md border border-[var(--rule)] bg-[var(--paper)] p-2.5 text-[11px]">
                   {cap !== null ? (
@@ -1267,7 +1012,7 @@ export default function ResearchPage() {
                       <span>
                         💰 Budget cap:{" "}
                         <b className="text-[var(--ink)]">{cap.toFixed(2)} USDC</b>{" "}
-                        <span className="text-[var(--muted)]">(granted, for this window)</span>
+                        <span className="text-[var(--muted)]">(locked for this run)</span>
                       </span>
                       <span>
                         💸 Used this run:{" "}
@@ -1276,7 +1021,7 @@ export default function ResearchPage() {
                           {research.result.x402?.paid ? "(x402 paper)" : "(agent unfunded — x402 skipped)"}
                         </span>
                       </span>
-                      <span className="text-[var(--muted)]">≈ {Math.max(0, Math.floor(cap / 0.01))} runs left within the cap · unused stays in your wallet</span>
+                      <span className="text-[var(--muted)]">≈ {Math.max(0, Math.floor(cap / 0.01))} runs from the locked pool</span>
                     </div>
                   ) : (
                     <span className="text-[var(--muted)]">
@@ -1807,70 +1552,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function ErrorBox({ children }: { children: React.ReactNode }) {
   return <p className="mt-4 rounded-md bg-red-50 p-3 text-xs text-red-700 dark:bg-red-950/40">{children}</p>;
-}
-
-/** Per-run autonomous agent spend (one paper unlocked via x402). */
-const PER_RUN_USDC = 0.01;
-
-/**
- * Granted-budget status panel: separates the CEILING you granted from what the
- * agent actually draws per run — the recurring "did 0.5 get spent?" confusion.
- * Shows a live expiry countdown + a usage bar (per-run sliver vs the cap).
- */
-function GrantStatus({ expiryUnix, capUSDC }: { expiryUnix: number; capUSDC: number }) {
-  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
-  useEffect(() => {
-    const t = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000);
-    return () => clearInterval(t);
-  }, []);
-  const left = expiryUnix - now;
-  const expired = left <= 0;
-  const h = Math.floor(left / 3600);
-  const m = Math.floor((left % 3600) / 60);
-  const s = left % 60;
-  const when = new Date(expiryUnix * 1000).toLocaleString();
-  const runs = capUSDC > 0 ? Math.floor(capUSDC / PER_RUN_USDC) : 0;
-  const sliverPct = capUSDC > 0 ? Math.min(100, Math.max(2, (PER_RUN_USDC / capUSDC) * 100)) : 0;
-
-  if (expired) {
-    return (
-      <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[11px] text-red-600 dark:border-red-900 dark:bg-red-950/30">
-        ⏱ Permission expired — grant again to keep researching.
-      </p>
-    );
-  }
-
-  return (
-    <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 dark:border-emerald-900 dark:bg-emerald-950/20">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-[11px] font-medium text-[var(--ink)]">
-          💰 Granted budget:{" "}
-          <span className="font-mono text-emerald-700 dark:text-emerald-400">{capUSDC.toFixed(2)} USDC</span>{" "}
-          <span className="text-[var(--muted)]">for this window</span>
-        </span>
-        <span className="font-mono text-[11px] text-[var(--muted)]">
-          ⏱ {h}h {m}m {s}s left
-        </span>
-      </div>
-
-      {/* Usage bar: the cap is the full track; the agent only draws a tiny sliver per run. */}
-      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-emerald-100 dark:bg-emerald-900/40">
-        <div className="h-full rounded-full bg-emerald-500" style={{ width: `${sliverPct}%` }} />
-      </div>
-      <p className="mt-2 text-[11px] leading-relaxed text-[var(--ink)]/70">
-        <b>Nothing was charged.</b> This is a spending <b>cap</b>, not a payment. The agent draws only{" "}
-        <span className="font-mono">~{PER_RUN_USDC.toFixed(2)} USDC</span> per run (to unlock one paper via x402) — about{" "}
-        <b>{runs} runs</b> before the cap is reached. Unused budget stays in your wallet; the rest expires at {when}.
-      </p>
-      <p className="mt-1 text-[10px] text-[var(--muted)]">
-        Author payouts are <i>separate</i> — paid from your wallet (gas-free via Circle Gateway) only when you click “Pay authors”, not from this cap.
-      </p>
-    </div>
-  );
-}
-
-function bigintReplacer(_key: string, value: unknown) {
-  return typeof value === "bigint" ? `${value}n` : value;
 }
 
 function isAttested(r: unknown): boolean {

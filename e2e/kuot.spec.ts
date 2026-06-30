@@ -95,27 +95,16 @@ test("research page renders an interactive query box", async ({ page }) => {
   await expect(box).toHaveValue("graphene supercapacitor");
 });
 
-test("research page marks the ERC-7715 budget step as optional (no dead-end)", async ({ page }) => {
-  // Regression: a normal (non-Flask) wallet hit a dead-end on "Set budget" because
-  // wallet_requestExecutionPermissions doesn't exist. The step must be clearly
-  // optional so the user knows research works without it.
+test("budget step is optional and works on any wallet (no ERC-7715 / MetaMask Flask)", async ({ page }) => {
+  // After removing the MetaMask-hackathon ERC-7715 path: the budget is optional,
+  // commits via a plain any-wallet lock, and you can skip straight to research.
   await page.goto("/dashboard/research");
-  // The budget step must be clearly optional + explain the non-Flask alternatives.
-  await expect(page.locator("body")).toContainText(/ERC-7715 advanced permissions/i);
-  await expect(page.locator("body")).toContainText(/Lock upfront/i);
-  await expect(page.locator("body")).toContainText(/Set budget\s*·\s*optional/i);
-});
-
-test("budget step: funding model toggles button between Flask grant and any-wallet lock", async ({ page }) => {
-  // Regression for the Rabby fix: the "Set budget" button must switch to a plain
-  // any-wallet lock when the custodial funding model is selected (no ERC-7715).
-  await page.goto("/dashboard/research");
-  await expect(page.locator("body")).toContainText(/Set budget \(MetaMask Flask\)/i);
-  await page.getByRole("button", { name: /Lock upfront/i }).click();
-  // Custodial button shows the exact USDC amount it will transfer, on any wallet.
-  await expect(page.locator("body")).toContainText(/Lock [\d.]+ USDC \(any wallet\)/i);
-  await page.getByRole("button", { name: /Non-custodial/i }).click();
-  await expect(page.locator("body")).toContainText(/Set budget \(MetaMask Flask\)/i);
+  await expect(page.locator("body")).toContainText(/Set a budget \(optional\)/i);
+  await expect(page.locator("body")).toContainText(/You can skip this/i);
+  await expect(page.getByRole("button", { name: /Lock [\d.]+ USDC \(any wallet\)/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Skip — just research/i })).toBeVisible();
+  // No MetaMask-Flask / ERC-7715 friction left anywhere on the page.
+  await expect(page.locator("body")).not.toContainText(/ERC-7715|MetaMask Flask/i);
 });
 
 test("cited page: ORCID lookup runs (invalid rejected, valid returns a real result)", async ({ page }) => {

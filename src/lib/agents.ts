@@ -1,11 +1,10 @@
 /**
  * Agent mesh — Kuot (A2A coordination)
  *
- * The user grants ONE budget to the Researcher. The Researcher then REDELEGATES
- * a narrowed slice to the Summarizer — a specialized sub-agent it subcontracts
- * summarization to. Authority only narrows: the Summarizer's budget, scope, and
- * expiry are all strictly tighter than the Researcher's. This is the
- * "Best A2A Coordination" track's redelegation, mapped to a real use case.
+ * There is ONE budget for the run. The Researcher then REDELEGATES a narrowed
+ * slice to each specialist sub-agent it subcontracts to. Authority only narrows:
+ * every sub-agent's budget, scope, and expiry are strictly tighter than its
+ * parent's — real A2A coordination, mapped to a citation-research use case.
  */
 
 export type AgentRole = {
@@ -32,10 +31,10 @@ export const AGENT_MESH: AgentRole[] = [
     id: "user",
     label: "You",
     depth: 0,
-    blurb: "Grant one periodic-USDC budget via ERC-7715. Keep custody; never sign again.",
+    blurb: "Set one budget for the run. The agent works under it and never exceeds it.",
     budgetFraction: 1,
     expiryFraction: 1,
-    caveats: ["erc20-token-periodic", "token: USDC", "redeemer: Researcher"],
+    caveats: ["budget: USDC", "scope: this run", "operator-funded or locked"],
   },
   {
     id: "researcher",
