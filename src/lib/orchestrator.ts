@@ -88,6 +88,13 @@ export type OrchestrationResult = {
   reputation: { agent: AgentRole["id"]; delta: number; reason: string }[];
   /** Citation-Matcher (Venice embeddings) relevance score per work id, 0–1. */
   relevance: Record<string, number>;
+  /** Adjudicator: the LLM's OWN decided fair-share per work id (0–100), judging how
+   *  much each source actually grounded the answer. When present these are the
+   *  authoritative payout weights — a genuine economic decision by the agent, not
+   *  just embedding math; embeddings remain the fallback. */
+  adjudication?: Record<string, number>;
+  /** One-line rationale the Adjudicator gave for the split (shown in the trace). */
+  adjudicationWhy?: string;
   /** Recommended USDC to settle, scaled by confidence (agent economic decision). */
   recommendedSettleUSDC: number;
 };
@@ -110,6 +117,46 @@ export function parseConfidence(text: string): Confidence {
 /** A low/medium verdict with flagged claims warrants one revision round. */
 export function needsRevision(confidence: Confidence): boolean {
   return confidence === "low";
+}
+
+/**
+ * Parse the Adjudicator LLM's payout decision. Pure + testable. Extracts the first
+ * JSON object and reads `shares` (workId → 0..100) + an optional `why`. Returns a
+ * map covering EVERY requested workId (omitted ids → 0, i.e. the agent chose not to
+ * credit them) only if the model produced at least one positive share for a known
+ * id; otherwise null (→ caller falls back to embedding-weighted payouts). Keeping
+ * it all-or-nothing avoids mixing the LLM's 0-100 scale with the rank scale.
+ */
+export function parseAdjudication(
+  text: string,
+  workIds: string[],
+): { shares: Record<string, number>; why?: string } | null {
+  if (!text) return null;
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start < 0 || end <= start) return null;
+  let obj: unknown;
+  try {
+    obj = JSON.parse(text.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+  if (!obj || typeof obj !== "object") return null;
+  const raw = (obj as { shares?: unknown }).shares;
+  if (!raw || typeof raw !== "object") return null;
+  const src = raw as Record<string, unknown>;
+  const known = new Set(workIds);
+  const shares: Record<string, number> = {};
+  let positive = 0;
+  for (const id of workIds) {
+    const v = src[id];
+    const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
+    shares[id] = Number.isFinite(n) && n > 0 && known.has(id) ? n : 0;
+    if (shares[id] > 0) positive += 1;
+  }
+  if (positive === 0) return null; // model credited nothing usable → fall back
+  const why = (obj as { why?: unknown }).why;
+  return { shares, why: typeof why === "string" ? why : undefined };
 }
 
 /** Max sub-questions the Planner may emit (bounds the Reader fan-out). */
@@ -477,6 +524,45 @@ export async function orchestrate(
     });
   }
 
+  // ── Adjudicator: the agent ITSELF decides how to split the payment across the
+  //    sources, judging the finished answer against each source — a genuine economic
+  //    decision by the LLM, not embedding arithmetic. Authoritative when usable;
+  //    embeddings are the fallback. (Best-effort: any failure → fall back silently.) ──
+  let adjudication: Record<string, number> | undefined;
+  let adjudicationWhy: string | undefined;
+  if (synthesis && works.length) {
+    const list = works.map((w, i) => `${i + 1}. id=${w.id} — ${w.title}`).join("\n");
+    const adjRes = await safeChat({
+      model: AGENT_MODELS.factcheck,
+      temperature: 0.2,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are the Adjudicator. Decide how a citation payment should be split across the listed sources, " +
+            "by how much each one ACTUALLY grounded the answer (a source that wasn't really used gets 0). " +
+            'Reply with STRICT JSON only, no prose: {"shares":{"<id>":<0-100>,...},"why":"<one short sentence>"}. ' +
+            "Use the exact ids given.",
+        },
+        { role: "user", content: `Question: ${query}\n\nAnswer:\n${synthesis.slice(0, 2000)}\n\nSources:\n${list}` },
+      ],
+    });
+    const parsed = parseAdjudication(adjRes?.text ?? "", works.map((w) => w.id));
+    if (parsed) {
+      adjudication = parsed.shares;
+      adjudicationWhy = parsed.why;
+    }
+    trace.push({
+      agent: "factchecker",
+      label: "Adjudicator",
+      action: "allocate payout",
+      status: parsed ? "ok" : "skipped",
+      detail: parsed
+        ? `[${modelLabel(AGENT_MODELS.factcheck)}] The agent decided the payout split itself — ${(parsed.why ?? "weighted by how much each source grounded the answer").slice(0, 140)}`
+        : "Adjudicator output unusable — payouts fall back to embedding-weighted shares.",
+    });
+  }
+
   // ── Remember this run so future related questions can recall it (best-effort) ──
   if (synthesis) {
     try {
@@ -503,6 +589,8 @@ export async function orchestrate(
     webCitations,
     reputation,
     relevance,
+    adjudication,
+    adjudicationWhy,
     recommendedSettleUSDC: settleForConfidence(confidence),
   };
 }

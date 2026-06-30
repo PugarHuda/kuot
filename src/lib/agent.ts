@@ -49,6 +49,12 @@ export type ResearchResult = {
   reputation?: { agent: string; delta: number; reason: string }[];
   /** Citation-Matcher (Venice embeddings) relevance per work id, 0–1. */
   relevance?: Record<string, number>;
+  /** Adjudicator: the agent's OWN decided payout share per work id (0–100). When
+   *  present these drove the split — a genuine LLM economic decision, not just
+   *  embedding math (embeddings are the fallback). */
+  adjudication?: Record<string, number>;
+  /** One-line rationale the Adjudicator gave for the payout split. */
+  adjudicationWhy?: string;
   /** Recommended USDC to settle, scaled by the fact-checker's confidence. */
   recommendedSettleUSDC?: number;
   /** The cleaned academic keywords actually searched on OpenAlex (typo-fixed, translated). */
@@ -65,16 +71,29 @@ export type ResearchResult = {
  */
 export const MAX_PAYOUT_AUTHORS = 8;
 
-export function weightCitations(works: Work[], relevance?: Record<string, number>): CitationPayout[] {
+export function weightCitations(
+  works: Work[],
+  relevance?: Record<string, number>,
+  adjudication?: Record<string, number>,
+): CitationPayout[] {
   const flat: (Omit<CitationPayout, "weightBps"> & { raw: number })[] = [];
+  // When the Adjudicator (LLM) decided the split, ITS shares are authoritative —
+  // the agent itself chose who gets paid. Embeddings/rank are the fallback prior.
+  const adjudicated = adjudication && Object.keys(adjudication).length > 0;
 
   works.forEach((w, i) => {
-    // Base rank weight, scaled by the Citation-Matcher's embedding relevance when
-    // available (relevant papers earn more; never zeroed out). Falls back to pure
-    // rank when embeddings are unavailable.
-    const rel = relevance?.[w.id];
-    const relFactor = typeof rel === "number" ? 0.25 + 0.75 * rel : 1;
-    const workWeight = (works.length - i) * relFactor; // rank 0 → highest
+    let workWeight: number;
+    if (adjudicated) {
+      // The agent's own fair-share decision for this source (0 = not credited).
+      workWeight = Math.max(0, adjudication![w.id] ?? 0);
+    } else {
+      // Base rank weight, scaled by the Citation-Matcher's embedding relevance when
+      // available (relevant papers earn more; never zeroed out). Falls back to pure
+      // rank when embeddings are unavailable.
+      const rel = relevance?.[w.id];
+      const relFactor = typeof rel === "number" ? 0.25 + 0.75 * rel : 1;
+      workWeight = (works.length - i) * relFactor; // rank 0 → highest
+    }
     const share = w.authors.length ? workWeight / w.authors.length : 0;
     for (const a of w.authors) {
       flat.push({
@@ -197,7 +216,7 @@ export async function runResearch(query: string, opts: ResearchOptions = {}): Pr
       // Proof-of-grounding: drop sub-floor citations, keep only authors whose work
       // grounded the answer, and surface the tamper-evident digest. Only `grounded`
       // gets paid — commitGrounding(proof) records it on-chain at settlement time.
-      const proof = proveGrounding({ query, synthesis: o.synthesis, payouts: weightCitations(works, o.relevance) });
+      const proof = proveGrounding({ query, synthesis: o.synthesis, payouts: weightCitations(works, o.relevance, o.adjudication) });
       return {
         query,
         synthesis: o.synthesis,
@@ -214,6 +233,8 @@ export async function runResearch(query: string, opts: ResearchOptions = {}): Pr
         agentTrace: o.trace,
         reputation: o.reputation,
         relevance: o.relevance,
+        adjudication: o.adjudication,
+        adjudicationWhy: o.adjudicationWhy,
         recommendedSettleUSDC: o.recommendedSettleUSDC,
         searchTerms,
       };

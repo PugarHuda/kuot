@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { weightCitations } from "../agent";
+import { parseAdjudication } from "../orchestrator";
 import { queryIdOf, encodeAttestAndSplit } from "../settlement";
 import { shareIdForQuery } from "../store";
 import { authorHash, bindingMessage, demoWallet } from "../registry";
@@ -47,6 +48,43 @@ describe("weightCitations", () => {
     const b = p.find((x) => x.authorName === "B")!.weightBps;
     expect(b).toBeGreaterThan(a);
     expect(p.reduce((s, x) => s + x.weightBps, 0)).toBe(10_000);
+  });
+  it("Adjudicator decision overrides rank: the agent's chosen source wins", () => {
+    const works = [work("1", [{ id: "a", name: "A" }]), work("2", [{ id: "b", name: "B" }])];
+    // Rank says work 1 wins, but the Adjudicator credited work 2 far more.
+    const p = weightCitations(works, undefined, { "1": 10, "2": 90 });
+    const a = p.find((x) => x.authorName === "A")!.weightBps;
+    const b = p.find((x) => x.authorName === "B")!.weightBps;
+    expect(b).toBeGreaterThan(a);
+    expect(p.reduce((s, x) => s + x.weightBps, 0)).toBe(10_000);
+  });
+  it("Adjudicator share of 0 drops a source from payouts", () => {
+    const works = [work("1", [{ id: "a", name: "A" }]), work("2", [{ id: "b", name: "B" }])];
+    const p = weightCitations(works, undefined, { "1": 100, "2": 0 });
+    expect(p.find((x) => x.authorName === "B")?.weightBps ?? 0).toBe(0);
+    expect(p.find((x) => x.authorName === "A")!.weightBps).toBe(10_000);
+  });
+});
+
+describe("parseAdjudication", () => {
+  it("parses strict JSON shares and the why", () => {
+    const r = parseAdjudication('{"shares":{"1":70,"2":30},"why":"work 1 grounded most"}', ["1", "2"]);
+    expect(r).not.toBeNull();
+    expect(r!.shares).toEqual({ "1": 70, "2": 30 });
+    expect(r!.why).toBe("work 1 grounded most");
+  });
+  it("defaults omitted ids to 0 and only keeps known ids", () => {
+    const r = parseAdjudication('{"shares":{"1":50,"x":99}}', ["1", "2"]);
+    expect(r!.shares).toEqual({ "1": 50, "2": 0 });
+  });
+  it("tolerates prose around the JSON object", () => {
+    const r = parseAdjudication('Here is my call:\n{"shares":{"1":100}}\nthanks', ["1"]);
+    expect(r!.shares).toEqual({ "1": 100 });
+  });
+  it("returns null on garbage / no positive share so payouts fall back", () => {
+    expect(parseAdjudication("not json", ["1"])).toBeNull();
+    expect(parseAdjudication('{"shares":{"1":0,"2":0}}', ["1", "2"])).toBeNull();
+    expect(parseAdjudication('{"nope":1}', ["1"])).toBeNull();
   });
 });
 
