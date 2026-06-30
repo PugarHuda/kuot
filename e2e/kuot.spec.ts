@@ -106,6 +106,17 @@ test("research page marks the ERC-7715 budget step as optional (no dead-end)", a
   await expect(page.locator("body")).toContainText(/Set budget\s*·\s*optional/i);
 });
 
+test("budget step: funding model toggles button between Flask grant and any-wallet lock", async ({ page }) => {
+  // Regression for the Rabby fix: the "Set budget" button must switch to a plain
+  // any-wallet lock when the custodial funding model is selected (no ERC-7715).
+  await page.goto("/dashboard/research");
+  await expect(page.locator("body")).toContainText(/Set budget \(MetaMask Flask\)/i);
+  await page.getByRole("button", { name: /Lock upfront/i }).click();
+  await expect(page.locator("body")).toContainText(/Lock budget \(any wallet\)/i);
+  await page.getByRole("button", { name: /Non-custodial/i }).click();
+  await expect(page.locator("body")).toContainText(/Set budget \(MetaMask Flask\)/i);
+});
+
 test("cited page: ORCID lookup runs (invalid rejected, valid returns a real result)", async ({ page }) => {
   await page.goto("/cited");
   const input = page.getByPlaceholder("0000-0002-1825-0097");
