@@ -7,6 +7,37 @@ import { test, expect, type APIRequestContext } from "@playwright/test";
  * installed and asserts a clean error — not a white-screen crash.
  */
 
+// Every public page a judge can reach without a wallet. The smoke sweep loads
+// each one and asserts: 2xx, no Next error-boundary, and NO uncaught JS exception
+// (many of these fetch on-chain data, so this catches a render/fetch crash).
+const PUBLIC_ROUTES = [
+  "/",
+  "/docs",
+  "/slide",
+  "/cited",
+  "/leaderboard",
+  "/dashboard",
+  "/dashboard/activity",
+  "/dashboard/agents",
+  "/dashboard/bounties",
+  "/dashboard/research",
+  "/dashboard/library",
+  "/dashboard/claim",
+];
+
+for (const route of PUBLIC_ROUTES) {
+  test(`smoke: ${route} loads with no crash or uncaught error`, async ({ page }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    const resp = await page.goto(route, { waitUntil: "domcontentloaded" });
+    expect(resp?.ok(), `${route} should be 2xx`).toBeTruthy();
+    await expect(page.locator("body")).not.toContainText(/Application error|could not be found|Internal Server Error/i);
+    // give client fetches (on-chain reads) a beat to run and potentially throw
+    await page.waitForTimeout(1500);
+    expect(errors, `${route} threw uncaught: ${errors.join(" | ")}`).toEqual([]);
+  });
+}
+
 async function makeShare(request: APIRequestContext): Promise<string> {
   const res = await request.post("/api/share", {
     data: {
