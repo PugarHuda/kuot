@@ -72,12 +72,26 @@ async function command(args: (string | number)[]): Promise<unknown> {
   return json.result;
 }
 
+// Coalesce concurrent writes of the SAME id so a burst (or a double-click) fires
+// ONE on-chain tx instead of many that collide on the operator nonce (→ RPC 502s).
+const inFlight = new Map<string, Promise<void>>();
+
 /**
  * Persist a JSON-serializable value under a share id. Prefers KV (fast, 90-day
  * TTL) when configured; otherwise publishes on-chain via ShareRegistry (durable,
- * zero-infra — the default so sharing works out of the box).
+ * zero-infra — the default so sharing works out of the box). Concurrent writes of
+ * the same id are coalesced, and a nonce-collision under load re-reads instead of
+ * failing (if a concurrent writer already published our content, that's success).
  */
 export async function putShared(id: string, value: unknown): Promise<void> {
+  const existing = inFlight.get(id);
+  if (existing) return existing;
+  const p = putSharedImpl(id, value).finally(() => inFlight.delete(id));
+  inFlight.set(id, p);
+  return p;
+}
+
+async function putSharedImpl(id: string, value: unknown): Promise<void> {
   const packed = pack(JSON.stringify(value));
   if (kvConfigured()) {
     await command(["SET", PREFIX + id, packed, "EX", TTL_SECONDS]);
@@ -108,6 +122,20 @@ export async function putShared(id: string, value: unknown): Promise<void> {
       const msg = e instanceof Error ? e.message : String(e);
       if (/allowance|insufficient funds|exceeds/i.test(msg)) {
         throw new Error("on-chain publish failed (operator out of Arc gas (USDC)) — top up the operator or enable KV (SHARE-SETUP.md)");
+      }
+      // Under a concurrent burst, another writer may have won the operator nonce and
+      // be publishing OUR content — poll briefly (their tx confirms in <1s on Arc);
+      // if our content lands, this is a success, not a 502.
+      for (let i = 0; i < 4; i++) {
+        try {
+          if ((await readOnChain(id)) === packed) {
+            lastWritten.set(id, packed);
+            return;
+          }
+        } catch {
+          /* read blip — keep polling */
+        }
+        await new Promise((r) => setTimeout(r, 1500));
       }
       throw e;
     }
