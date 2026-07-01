@@ -7,10 +7,9 @@ Record at 1080p, captions on. Keep each beat tight — aim ~20s each.
 
 > Pre-roll setup (not filmed): `.env` filled, contracts live on Arc (DEPLOYED.md), app on Vercel,
 > one funded Gateway balance. Have ArcScan (testnet.arcscan.app) open in a second tab.
-> Note: the in-app "Set budget" step is **optional**. The non-custodial scoped budget uses ERC-7715
-> (MetaMask Flask only); on any other wallet (Rabby, Coinbase, normal MetaMask) either skip it and go
-> straight to "Ask a research question" (the agent runs under its own operator budget), or pick
-> **"Lock upfront"** to commit a budget with a plain USDC transfer — that works on any wallet.
+> Note: the in-app "Set a budget" step is **optional** and works on **any wallet** — skip it and go
+> straight to "Ask a research question" (the agent runs under its own operator budget), or click
+> **"Lock … USDC (any wallet)"** to commit a budget with a plain USDC transfer. No MetaMask Flask needed.
 
 ## 0:00–0:15 — Hook
 - On screen: the one-liner — *"Kuot: the recursive citation economy on Arc. Every AI answer

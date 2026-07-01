@@ -13,11 +13,12 @@ npm run dev              # http://localhost:3000  →  /research
 The research flow works immediately (free) using OpenAlex + a Venice **dev fallback**
 when no Venice credit is present (clearly labeled in the UI).
 
-## 2. a wallet Flask (required for Agent Wallet policy grant + redelegation + Circle Gateway redeem)
+## 2. A wallet — any wallet (MetaMask, Rabby, Coinbase…)
 
-- Install **a wallet Flask 13.9.0+**: https://docs.metamask.io/snaps/get-started/install-flask/
-- Use a **separate browser profile** (disable regular a wallet there to avoid conflicts).
-- Add networks: **Base Arc** (chainId 84532) and **Arc** (11155111).
+- Connect any EIP-6963 injected wallet. **No MetaMask Flask needed** — the old ERC-7715
+  "scoped budget" grant has been removed. Research runs with no signature (operator-funded),
+  and the optional "Lock … USDC" budget is a plain USDC transfer that works on any wallet.
+- Add the **Arc testnet** network (chainId 5042002) when prompted.
 
 ## 3. Fund accounts (testnet, free)
 
@@ -55,7 +56,7 @@ Copy the printed address into `NEXT_PUBLIC_ATTRIBUTION_LEDGER` in `.env`.
 
 | Purpose | Chain |
 |---|---|
-| Agent Wallet policy Advanced Permissions (Flask) | Arc / Base Arc |
+| Research + optional any-wallet budget lock | Arc testnet (5042002) |
 | x402 + Venice settlement | Base |
 | Circle Gateway relay (test) | Base Arc (`relayer.1shotapi.dev`) |
 | Circle Gateway relay (prize) | Base / Ethereum mainnet (`relayer.1shotapi.com`) |
