@@ -257,7 +257,7 @@ async function fetchOpenAlexResilient(url: URL): Promise<Response> {
 }
 
 /** Crossref item (only the fields we use). */
-type CrossrefItem = {
+export type CrossrefItem = {
   DOI?: string;
   title?: string[];
   abstract?: string; // JATS XML
@@ -267,8 +267,24 @@ type CrossrefItem = {
 };
 
 /** Strip JATS/HTML tags from a Crossref abstract (they ship XML, often absent). */
-function stripTags(s?: string): string {
+export function stripTags(s?: string): string {
   return (s ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Extract clean author identities from a Crossref item: prefer `name`, else
+ * `given family`; ORCID when present. Drops entries with no usable name. Pure +
+ * unit-testable (the network-free heart of the Crossref fallback).
+ */
+export function crossrefAuthorsOf(it: CrossrefItem): { id: string; name: string; orcid?: string }[] {
+  return (it.author ?? [])
+    .slice(0, 4)
+    .map((a) => {
+      const name = (a.name ?? `${a.given ?? ""} ${a.family ?? ""}`.trim()) || "Unknown author";
+      const orcid = a.ORCID ? normalizeOrcid(a.ORCID) : undefined;
+      return { id: orcid ?? name, name, orcid };
+    })
+    .filter((a) => a.name && a.name !== "Unknown author");
 }
 
 /**
@@ -281,6 +297,10 @@ export async function searchCrossref(query: string, limit: number, exclude: Set<
   const url = new URL("https://api.crossref.org/works");
   url.searchParams.set("query", sanitizeQuery(query));
   url.searchParams.set("rows", String(Math.min(50, limit + exclude.size + 5)));
+  // Only journal articles that HAVE an abstract + authors — Crossref is full of
+  // books/entries with neither, which we'd just drop. This makes the fallback
+  // return real, citable, authored papers with text to synthesize from.
+  url.searchParams.set("filter", "type:journal-article,has-abstract:true");
   url.searchParams.set("select", "DOI,title,abstract,author,published,issued");
   url.searchParams.set("mailto", "research@kuot.app");
   let items: CrossrefItem[];
@@ -301,17 +321,7 @@ export async function searchCrossref(query: string, limit: number, exclude: Set<
     .filter((it) => (it.title?.[0] ?? "").trim() && !exclude.has((it.DOI ?? "").toLowerCase()))
     .slice(0, limit);
 
-  const enriched = picked.map((it) => ({
-    it,
-    authors: (it.author ?? [])
-      .slice(0, 4)
-      .map((a) => {
-        const name = (a.name ?? `${a.given ?? ""} ${a.family ?? ""}`.trim()) || "Unknown author";
-        const orcid = a.ORCID ? normalizeOrcid(a.ORCID) : undefined;
-        return { id: orcid ?? name, name, orcid };
-      })
-      .filter((a) => a.name && a.name !== "Unknown author"),
-  }));
+  const enriched = picked.map((it) => ({ it, authors: crossrefAuthorsOf(it) }));
   const wallets = await resolveAuthorWallets(enriched.flatMap((e) => e.authors.map(identityOf)));
 
   return enriched

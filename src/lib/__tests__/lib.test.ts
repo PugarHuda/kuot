@@ -5,7 +5,7 @@ import { queryIdOf, encodeAttestAndSplit } from "../settlement";
 import { shareIdForQuery } from "../store";
 import { authorHash, bindingMessage, demoWallet } from "../registry";
 import { encodePaymentHeader, decodePaymentHeader, require402, type PaymentPayload } from "../x402";
-import { sanitizeQuery, fillerStrip, type Work } from "../corpus";
+import { sanitizeQuery, fillerStrip, stripTags, crossrefAuthorsOf, searchCrossref, type Work } from "../corpus";
 
 const work = (id: string, authors: { id: string; name: string }[]): Work => ({
   id,
@@ -109,6 +109,57 @@ describe("sanitizeQuery", () => {
   it("falls back to the raw query if cleaning empties it", () => {
     expect(sanitizeQuery("???")).toBe("???");
   });
+});
+
+describe("stripTags (Crossref JATS abstract cleaner)", () => {
+  it("strips JATS/HTML tags and collapses whitespace", () => {
+    expect(stripTags("<jats:p>Hello   <b>world</b></jats:p>")).toBe("Hello world");
+  });
+  it("passes through plain text", () => {
+    expect(stripTags("just words")).toBe("just words");
+  });
+  it("returns empty string for undefined/empty", () => {
+    expect(stripTags(undefined)).toBe("");
+    expect(stripTags("")).toBe("");
+  });
+});
+
+describe("crossrefAuthorsOf (Crossref fallback author extraction)", () => {
+  it("builds a name from given+family and normalizes ORCID", () => {
+    const a = crossrefAuthorsOf({ author: [{ given: "Ada", family: "Lovelace", ORCID: "https://orcid.org/0000-0002-1825-0097" }] });
+    expect(a[0].name).toBe("Ada Lovelace");
+    expect(a[0].orcid).toBe("0000-0002-1825-0097");
+    expect(a[0].id).toBe("0000-0002-1825-0097"); // id = orcid when present
+  });
+  it("uses the `name` field when present, id falls back to the name (no ORCID)", () => {
+    const a = crossrefAuthorsOf({ author: [{ name: "CERN Collaboration" }] });
+    expect(a[0].name).toBe("CERN Collaboration");
+    expect(a[0].orcid).toBeUndefined();
+    expect(a[0].id).toBe("CERN Collaboration");
+  });
+  it("drops authors with no usable name and caps at 4", () => {
+    const a = crossrefAuthorsOf({ author: [{}, { family: "Zhang" }, { given: "A", family: "B" }, { family: "C" }, { family: "D" }, { family: "E" }] });
+    expect(a.every((x) => x.name && x.name !== "Unknown author")).toBe(true);
+    expect(a.length).toBeLessThanOrEqual(4);
+  });
+  it("returns [] for an item with no authors", () => {
+    expect(crossrefAuthorsOf({ title: ["x"] })).toEqual([]);
+  });
+});
+
+// Live integration: hits the REAL Crossref API (the OpenAlex-outage fallback).
+// Opt-in (LIVE_CORPUS=1) so the default `npm test` stays fast + offline-safe.
+describe.skipIf(!process.env.LIVE_CORPUS)("searchCrossref [live integration]", () => {
+  it("returns real, citable works with authors for an academic query", async () => {
+    const works = await searchCrossref("carbon capture", 3, new Set());
+    expect(works.length).toBeGreaterThan(0);
+    for (const w of works) {
+      expect(w.title).toBeTruthy();
+      expect(w.source).toBe("crossref");
+      expect(w.authors.length).toBeGreaterThan(0);
+      expect(w.authors[0].wallet).toMatch(/^0x[0-9a-fA-F]{40}$/); // resolved on-chain/demo
+    }
+  }, 40_000);
 });
 
 describe("fillerStrip", () => {
