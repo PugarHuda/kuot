@@ -7,7 +7,6 @@ import { ATTRIBUTION_LEDGER_ABI, queryIdOf } from "@/lib/settlement";
 import type { ResearchResult } from "@/lib/agent";
 import Link from "next/link";
 import { AGENT_MESH, narrowedFor } from "@/lib/agents";
-import { redeemViaOneShot } from "@/lib/redeem";
 import { loadHistory, saveToHistory, removeFromHistory, type HistoryEntry } from "@/lib/history";
 import { pickFlaskConnector } from "@/lib/wagmi";
 import { DownloadableReceipt } from "@/components/DownloadableReceipt";
@@ -15,7 +14,6 @@ import { CitedText } from "@/components/ResultView";
 import { GuidedTour, type TourStep } from "@/components/GuidedTour";
 import { sanitizeDecimal } from "@/lib/format";
 import { createWalletClient, custom, erc20Abi, type Chain, type WalletClient } from "viem";
-import { sepolia, baseSepolia } from "viem/chains";
 
 type ResearchState =
   | { status: "idle" }
@@ -26,12 +24,6 @@ type ResearchState =
 type SettleState =
   | { status: "idle" }
   | { status: "settling" }
-  | { status: "done"; result: unknown }
-  | { status: "error"; message: string };
-
-type RedeemState =
-  | { status: "idle" }
-  | { status: "redeeming" }
   | { status: "done"; result: unknown }
   | { status: "error"; message: string };
 
@@ -108,7 +100,6 @@ export default function ResearchPage() {
 
   const [excludeSeen, setExcludeSeen] = useState(true);
   const [autoPay, setAutoPay] = useState(false);
-  const [autoPayRail, setAutoPayRail] = useState<"direct" | "1shot">("direct");
   const [prefund, setPrefund] = useState(false);
   const [prefundState, setPrefundState] = useState<{
     status: "idle" | "locking" | "locked" | "splitting" | "done" | "error";
@@ -117,7 +108,6 @@ export default function ResearchPage() {
     amount6?: bigint;
     message?: string;
   }>({ status: "idle" });
-  const [relayChain, setRelayChain] = useState<number>(PERMISSION_CHAIN.id);
   const [query, setQuery] = useState("");
   const [papers, setPapers] = useState(5);
   const [fromYear, setFromYear] = useState<number | "">("");
@@ -125,7 +115,6 @@ export default function ResearchPage() {
   const [language, setLanguage] = useState("auto");
   const [research, setResearch] = useState<ResearchState>({ status: "idle" });
   const [settle, setSettle] = useState<SettleState>({ status: "idle" });
-  const [redeem, setRedeem] = useState<RedeemState>({ status: "idle" });
   const [payDirect, setPayDirect] = useState<{ status: "idle" | "approving" | "paying" | "done" | "error"; tx?: string; message?: string }>({
     status: "idle",
   });
@@ -235,16 +224,13 @@ export default function ResearchPage() {
   }, [research.status]);
 
   // Auto-pay: when enabled, settle authors directly the moment research finishes —
-  // honouring the budget you already committed when locking (opt-in, off by default).
+  // attestAndSplit from your wallet, no fee (opt-in, off by default).
   useEffect(() => {
-    if (research.status === "done" && autoPay && !prefund && payDirect.status === "idle" && redeem.status === "idle") {
-      // Both rails are real: direct = attestAndSplit from your wallet (no fee);
-      // 1shot = the live Circle Gateway (gas-free, gas paid in USDC).
-      if (autoPayRail === "1shot") handleRedeem();
-      else handlePayDirect();
+    if (research.status === "done" && autoPay && !prefund && payDirect.status === "idle") {
+      handlePayDirect();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [research.status, autoPay, autoPayRail]);
+  }, [research.status, autoPay]);
 
   // Prefund (Lock-upfront): the locked pool auto-splits to authors when the run ends.
   useEffect(() => {
@@ -280,40 +266,6 @@ export default function ResearchPage() {
       .catch(() => setAlreadyAttested(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [research.status, publicClient, settle.status, payDirect.status, prefundState.status]);
-
-  async function handleRedeem() {
-    if (research.status !== "done") return;
-    if (redeem.status === "redeeming") return; // guard against double-trigger
-    setRedeem({ status: "redeeming" });
-    const relayChainObj: Chain = relayChain === baseSepolia.id ? baseSepolia : sepolia;
-    try {
-      // Relaying on a different chain (e.g. Base Arc for a far lower fee)?
-      // Switch the wallet to Arc first so the lock + relay land there.
-      if (relayChain !== chainId) {
-        await switchChainAsync({ chainId: relayChain as typeof sepolia.id | typeof baseSepolia.id });
-      }
-      const wc = await resolveWalletClient(relayChainObj);
-      if (!wc) {
-        setRedeem({ status: "error", message: "Wallet not ready — reconnect your wallet." });
-        return;
-      }
-      const result = await redeemViaOneShot({
-        walletClient: wc,
-        chainId: relayChain,
-        payouts: research.result.payouts,
-        workUSDC: research.result.recommendedSettleUSDC ?? 0.5,
-      });
-      setRedeem({ status: "done", result });
-    } catch (e) {
-      const raw = e instanceof Error ? e.message : String(e);
-      const friendly = /requestExecutionPermissions.*not exist|doesn't has corresponding handler|method not found/i.test(raw)
-        ? "Gas-free relay isn't available on this wallet. Use “Pay directly” instead — it settles authors on-chain."
-        : /0x35d90805|alreadyattested/i.test(raw)
-          ? "This query was already settled on-chain — authors were already paid."
-          : raw;
-      setRedeem({ status: "error", message: friendly });
-    }
-  }
 
   /**
    * Pay authors DIRECTLY on-chain (no Circle Gateway): approve USDC, then call
@@ -431,7 +383,6 @@ export default function ResearchPage() {
     if (!query.trim()) return;
     setResearch({ status: "running" });
     setSettle({ status: "idle" });
-    setRedeem({ status: "idle" });
     setFeedback({ status: "idle" });
     setShare({ status: "idle" });
     // Skip papers already cited in this device's past runs so each query surfaces
@@ -924,24 +875,9 @@ export default function ResearchPage() {
             />
             <span>
               <span className="font-medium">Auto-pay authors when research finishes</span>{" "}
-              {autoPay && !prefund ? (
-                <span className="inline-flex items-center gap-1 text-[10px]">
-                  via
-                  <select
-                    value={autoPayRail}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => setAutoPayRail(e.target.value as "direct" | "1shot")}
-                    className="rounded border border-[var(--rule)] bg-transparent px-1 py-0.5 text-[10px]"
-                  >
-                    <option value="direct">direct (no fee)</option>
-                    <option value="1shot">Gateway (batched)</option>
-                  </select>
-                </span>
-              ) : null}
               <span className="block text-[10px] text-[var(--muted)]">
-                {autoPayRail === "1shot"
-                  ? "Settles via the live Circle Gateway (gas-free — gas paid in USDC). High fee on Arc testnet; tiny on Base. Real, not a mock."
-                  : "Settles directly on-chain (attestAndSplit, no settlement fee) right after each run — honours the budget you committed."}
+                Settles directly on-chain (attestAndSplit, no settlement fee) right after each run —
+                straight from your wallet.
               </span>
             </span>
           </label>
@@ -1242,7 +1178,7 @@ export default function ResearchPage() {
               ) : (
                 <>
                   {(() => {
-                    const paid = payDirect.status === "done" || redeem.status === "done";
+                    const paid = payDirect.status === "done";
                     const locked = alreadyAttested || paid;
                     return (
                       <>
@@ -1285,26 +1221,11 @@ export default function ResearchPage() {
                         ) : null}
                         {payDirect.status === "error" ? <p className="mt-2 text-[11px] text-red-600">{payDirect.message}</p> : null}
 
-                        {/* ADVANCED: gas-free relay + record-only, tucked away to keep the main path clear. */}
+                        {/* ADVANCED: record-only attestation, tucked away to keep the main path clear. */}
                         <details className="mt-2 text-[11px]">
                           <summary className="cursor-pointer text-[var(--muted)] hover:text-[var(--accent)]">Advanced settlement options</summary>
                           <div className="mt-2 space-y-2 rounded-md border border-[var(--rule)] bg-[var(--paper)] p-3">
                             <div className="flex flex-wrap items-center gap-2">
-                              <button
-                                onClick={handleRedeem}
-                                disabled={redeem.status === "redeeming" || paid}
-                                className="rounded-md bg-indigo-600 px-3 py-1.5 text-[11px] font-medium text-white transition hover:bg-indigo-500 disabled:opacity-40"
-                              >
-                                {redeem.status === "redeeming" ? "Relaying…" : "Pay gas-free via Circle Gateway →"}
-                              </button>
-                              <select
-                                value={relayChain}
-                                onChange={(e) => setRelayChain(Number(e.target.value))}
-                                className="rounded-md border border-[var(--rule)] bg-transparent px-1.5 py-1.5 text-[11px]"
-                              >
-                                <option value={sepolia.id}>direct on Arc</option>
-                                
-                              </select>
                               <button
                                 onClick={handleSettle}
                                 disabled={settle.status === "settling" || locked}
@@ -1314,9 +1235,8 @@ export default function ResearchPage() {
                               </button>
                             </div>
                             <p className="text-[10px] leading-relaxed text-[var(--muted)]">
-                              <b>Gateway</b> = batched, gas-free on Arc
-                              Arc testnet, tiny on Base Arc. <b>Record-only</b> writes the attestation without paying.
-                              {redeem.status === "error" ? <span className="block text-red-600">⚠ {redeem.message}</span> : null}
+                              <b>Record-only</b> writes the on-chain attestation without transferring — the authors’
+                              shares are logged and can be paid/claimed later.
                               {settle.status === "error" ? <span className="block text-red-600">⚠ {settle.message}</span> : null}
                             </p>
                           </div>
@@ -1412,7 +1332,7 @@ export default function ResearchPage() {
                   result={research.result}
                   // "Paid" only after an actual PAYMENT (direct, Gateway, or prefund
                   // split) — the record-only attestation (①) doesn't move money.
-                  settled={payDirect.status === "done" || redeem.status === "done" || prefundState.status === "done"}
+                  settled={payDirect.status === "done" || prefundState.status === "done"}
                 />
                 {receipt.status === "generating" ||
                 (receipt.status === "done" && (receipt.image || receipt.audioBase64)) ? (
@@ -1456,16 +1376,6 @@ export default function ResearchPage() {
                 ) : null}
               </div>
               {receipt.status === "error" ? <ErrorBox>{receipt.message}</ErrorBox> : null}
-
-              {redeem.status === "done" ? (
-                <details className="mt-3">
-                  <summary className="cursor-pointer text-[11px] text-emerald-600">✓ Relayed — view raw response</summary>
-                  <pre className="mt-2 max-h-56 overflow-auto rounded-md bg-indigo-50 p-3 text-[11px] dark:bg-indigo-950/40">
-                    {JSON.stringify(redeem.result, null, 2)}
-                  </pre>
-                </details>
-              ) : null}
-              {redeem.status === "error" ? <ErrorBox>{redeem.message}</ErrorBox> : null}
               {settle.status === "error" ? <ErrorBox>{settle.message}</ErrorBox> : null}
             </div>
           </div>
