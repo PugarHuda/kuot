@@ -47,7 +47,10 @@ export async function refineQueryForSearch(query: string): Promise<string> {
           content:
             "You convert a user's request into a concise English academic search query for a paper " +
             "database (OpenAlex). Fix typos, translate to English, and output ONLY 2–6 core topic " +
-            "keywords — no commands, no punctuation, no quotes, no explanation.",
+            "keywords — no commands, no punctuation, no quotes, no explanation. " +
+            "CRITICAL: if the input is already a specific term, product, tool, library, or proper noun " +
+            "(e.g. 'n8n', 'Kubernetes', 'CRISPR'), KEEP IT VERBATIM — never replace it with a broader or " +
+            "unrelated topic, and never invent keywords that aren't in the input's meaning.",
         },
         { role: "user", content: query },
       ],

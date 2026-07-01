@@ -636,8 +636,11 @@ export default function ResearchPage() {
         <p className="mt-2 rounded-md border border-[var(--rule)] bg-[var(--paper-2)] px-3 py-2 text-[11px] text-[var(--ink)]/75">
           <b>Research is free for you</b> — the <b>agent pays the cited authors</b> from its own budget (that’s
           the whole idea: an autonomous paying agent). You don’t need to lock or hold anything. The amount below
-          just tunes how <b>deep</b> each run goes. Locking your own USDC is <b>optional</b> — do it only if you
-          want to fund the run yourself (a plain any-wallet transfer) instead of using the agent’s budget.
+          just tunes how <b>deep</b> each run goes.<br />
+          <b>Why fund it yourself (optional)?</b> Lock a budget and the cited authors are paid from <b>your</b>
+          pool — auto-settled the moment a run finishes (no “Settle” click each time), so you support the
+          researchers <b>directly</b> and every payment is on-chain from your wallet. The paper-read and
+          research depth are identical either way; funding only changes <i>who</i> pays the authors (you vs the agent).
         </p>
         <p className="mt-2 rounded-md bg-[var(--accent-soft)] px-3 py-2 text-[11px] text-[var(--ink)]/75">
           💡 A bigger budget buys <b>deeper research</b>: it scales the agent fan-out
@@ -968,11 +971,17 @@ export default function ResearchPage() {
                       </span>
                       <span className="text-[var(--muted)]">≈ {Math.max(0, Math.floor(cap / 0.01))} runs from the locked pool</span>
                     </div>
+                  ) : research.result.x402?.paid ? (
+                    <span className="text-[var(--muted)]">
+                      💸 The agent paid <b className="text-[var(--ink)]">{used.toFixed(5)} USDC</b> from its <b>own budget</b> to
+                      unlock the top paper via x402 — <b>free for you</b>. Optional: <b>lock a budget above</b> and the cited
+                      authors get paid automatically from <b>your</b> pool when a run finishes (you support them directly,
+                      no Settle click). The paper-read + research depth are the same either way.
+                    </span>
                   ) : (
                     <span className="text-[var(--muted)]">
-                      💸 <b className="text-[var(--ink)]">No active budget</b> — the agent ran <b>unfunded</b>, so it skipped the
-                      x402 paper purchase (read free metadata only). <b>Fund the agent above</b> to let it buy papers
-                      (~0.01 USDC/run, within your cap).
+                      💸 <b className="text-[var(--ink)]">Ran unfunded</b> — the agent had no test USDC, so it skipped the x402
+                      paper unlock (read free metadata only). It still cited + can pay the authors on-chain below.
                     </span>
                   )}
                 </div>
