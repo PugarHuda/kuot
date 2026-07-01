@@ -56,7 +56,7 @@ export default async function SharedResultPage({ params }: { params: Promise<{ i
       <p className="text-[11px] uppercase tracking-[0.15em] text-[var(--accent)]">Shared research</p>
       <h1 className="serif mt-1 text-3xl font-semibold tracking-tight">{result.query}</h1>
       <p className="mt-1 text-[11px] text-[var(--muted)]">
-        Saved {new Date(savedAt).toUTCString()} ·{" "}
+        {savedAt ? `Saved ${new Date(savedAt).toUTCString()} · ` : ""}
         {result.confidence ? `confidence: ${result.confidence} · ` : ""}
         {result.rounds && result.rounds > 1 ? `${result.rounds} rounds · ` : ""}
         <Link href="/dashboard/activity" className="link-accent underline" title={queryId}>

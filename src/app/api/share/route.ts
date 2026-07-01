@@ -84,7 +84,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "result.query required" }, { status: 400 });
   }
   const id = shareIdForQuery(result.query);
-  const payload: SharedPayload = { result: slimForShare(result), savedAt: Date.now(), queryId: queryIdOf(result.query) };
+  // savedAt is 0 (not Date.now()) so concurrent shares of the SAME query produce
+  // BYTE-IDENTICAL content — that makes the on-chain write idempotent under a burst
+  // (no nonce collisions / 502s). The precise save time isn't essential for a
+  // public permalink; the run's own history keeps a local timestamp.
+  const payload: SharedPayload = { result: slimForShare(result), savedAt: 0, queryId: queryIdOf(result.query) };
   try {
     await putShared(id, payload);
     return NextResponse.json({ id, path: `/r/${id}` });
