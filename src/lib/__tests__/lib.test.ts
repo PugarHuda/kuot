@@ -58,6 +58,11 @@ describe("weightCitations", () => {
     expect(b).toBeGreaterThan(a);
     expect(p.reduce((s, x) => s + x.weightBps, 0)).toBe(10_000);
   });
+  it("Adjudicator crediting NO source (all 0) pays no one — not an embedding fallback", () => {
+    const works = [work("1", [{ id: "a", name: "A" }]), work("2", [{ id: "b", name: "B" }])];
+    // The agent judged the answer wasn't grounded in any cited paper.
+    expect(weightCitations(works, { "1": 0.9, "2": 0.9 }, { "1": 0, "2": 0 })).toEqual([]);
+  });
   it("Adjudicator share of 0 drops a source from payouts", () => {
     const works = [work("1", [{ id: "a", name: "A" }]), work("2", [{ id: "b", name: "B" }])];
     const p = weightCitations(works, undefined, { "1": 100, "2": 0 });
@@ -81,10 +86,17 @@ describe("parseAdjudication", () => {
     const r = parseAdjudication('Here is my call:\n{"shares":{"1":100}}\nthanks', ["1"]);
     expect(r!.shares).toEqual({ "1": 100 });
   });
-  it("returns null on garbage / no positive share so payouts fall back", () => {
+  it("returns null ONLY on malformed output (no JSON / no shares / scores none of our ids)", () => {
     expect(parseAdjudication("not json", ["1"])).toBeNull();
-    expect(parseAdjudication('{"shares":{"1":0,"2":0}}', ["1", "2"])).toBeNull();
-    expect(parseAdjudication('{"nope":1}', ["1"])).toBeNull();
+    expect(parseAdjudication('{"nope":1}', ["1"])).toBeNull(); // no shares object
+    expect(parseAdjudication('{"shares":{"x":50}}', ["1", "2"])).toBeNull(); // scores none of our ids
+  });
+  it("HONORS a valid all-zero decision (nothing grounded) — returns shares, not null", () => {
+    // The agent scored our ids but credited none → this is a real 'pay no one' call,
+    // not a malformed output. It must flow through (weightCitations then pays no one).
+    const r = parseAdjudication('{"shares":{"1":0,"2":0},"why":"answer came from general knowledge, not these papers"}', ["1", "2"]);
+    expect(r).not.toBeNull();
+    expect(r!.shares).toEqual({ "1": 0, "2": 0 });
   });
   it("reads the agent's decided total and clamps it to the safe band", () => {
     expect(parseAdjudication('{"shares":{"1":100},"total":0.4}', ["1"])!.total).toBe(0.4);

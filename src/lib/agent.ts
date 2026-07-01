@@ -81,6 +81,12 @@ export function weightCitations(
   // the agent itself chose who gets paid. Embeddings/rank are the fallback prior.
   const adjudicated = adjudication && Object.keys(adjudication).length > 0;
 
+  // The agent adjudicated but credited NO source (every share 0) → it decided the
+  // answer wasn't grounded in any cited paper. Honor that: pay no one, rather than
+  // falling back to embeddings and paying irrelevant authors. (Only when the
+  // Adjudicator ran — the embedding path never zeroes everything out.)
+  if (adjudicated && works.every((w) => (adjudication![w.id] ?? 0) <= 0)) return [];
+
   works.forEach((w, i) => {
     let workWeight: number;
     if (adjudicated) {

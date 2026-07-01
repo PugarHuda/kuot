@@ -151,14 +151,18 @@ export function parseAdjudication(
   const src = raw as Record<string, unknown>;
   const known = new Set(workIds);
   const shares: Record<string, number> = {};
-  let positive = 0;
+  let addressed = 0; // how many of OUR ids the model actually scored
   for (const id of workIds) {
+    if (id in src) addressed += 1;
     const v = src[id];
     const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
     shares[id] = Number.isFinite(n) && n > 0 && known.has(id) ? n : 0;
-    if (shares[id] > 0) positive += 1;
   }
-  if (positive === 0) return null; // model credited nothing usable → fall back
+  // Malformed only if the model scored NONE of our ids (garbage / wrong ids) — then
+  // the caller falls back to embeddings. A VALID all-zero decision (the agent says
+  // no cited source actually grounded the answer) is honored: it flows through and
+  // weightCitations pays no one, instead of silently paying irrelevant authors.
+  if (addressed === 0) return null;
   const why = (obj as { why?: unknown }).why;
   // The agent's own call on HOW MUCH to pay in total (not just the split). Clamped
   // to a safe band so a hallucinated number can't drain or zero the settlement.
@@ -565,14 +569,19 @@ export async function orchestrate(
       adjudicationWhy = parsed.why;
       adjudicatedTotal = parsed.total;
     }
+    // A valid decision where the agent credited NO source (all shares 0) means it
+    // judged the answer NOT grounded in any cited paper → no author payouts.
+    const groundedNone = parsed ? Object.values(parsed.shares).every((v) => v <= 0) : false;
     trace.push({
       agent: "factchecker",
       label: "Adjudicator",
       action: "allocate payout",
       status: parsed ? "ok" : "skipped",
-      detail: parsed
-        ? `[${modelLabel(AGENT_MODELS.factcheck)}] The agent decided the split${parsed.total ? ` and a ${parsed.total.toFixed(2)} USDC total` : ""} itself — ${(parsed.why ?? "weighted by how much each source grounded the answer").slice(0, 140)}`
-        : "Adjudicator output unusable — payouts fall back to embedding-weighted shares.",
+      detail: !parsed
+        ? "Adjudicator output unusable — payouts fall back to embedding-weighted shares."
+        : groundedNone
+          ? `[${modelLabel(AGENT_MODELS.factcheck)}] The agent judged that NO cited source grounded the answer — paying no one. ${(parsed.why ?? "").slice(0, 120)}`
+          : `[${modelLabel(AGENT_MODELS.factcheck)}] The agent decided the split${parsed.total ? ` and a ${parsed.total.toFixed(2)} USDC total` : ""} itself — ${(parsed.why ?? "weighted by how much each source grounded the answer").slice(0, 140)}`,
     });
   }
 
