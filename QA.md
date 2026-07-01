@@ -3,13 +3,19 @@
 Last run against production `https://kuot-azure.vercel.app` + the test suites. All green.
 
 ## Automated
-| Suite | Result |
-|---|---|
-| Vitest (TS unit/integration) | **109 / 109 pass** |
-| Foundry (Solidity) | **59 / 59 pass** |
-| Playwright (E2E browser click-through, `npm run e2e`) | **21 / 21 pass** (12-page smoke + cited ORCID lookup + optional any-wallet budget + Cite-button + sidebar/nav clicks) |
-| `tsc --noEmit` | clean |
-| `next build` | compiles |
+| Suite | Result | How to run |
+|---|---|---|
+| Vitest (TS unit) | **117 / 117 pass** (+4 opt-in live skipped) | `npm test` |
+| Foundry (Solidity, incl. fuzz) | **59 / 59 pass** | `cd contracts && forge test` |
+| Playwright (E2E browser click-through) | **21 / 21 pass** (12-page smoke + cited ORCID lookup + any-wallet budget + Cite-button + nav) | `npm run e2e` |
+| Live integration — Crossref fallback (real API) | **1 / 1 pass** | `LIVE_CORPUS=1 npx vitest run -t "live integration"` |
+| Live integration — full pipeline + settle read-back + burst load | **4 / 4 pass** | `LIVE_API=1 npx vitest run integration.live` |
+| `tsc --noEmit` | clean | |
+| `next build` | compiles | |
+
+The load test (12-request burst to `/api/share`) caught a real concurrency bug — concurrent on-chain writes
+collided on the operator nonce → 502s. Fixed (write coalescing + re-read + deterministic content); burst is
+now 12/12 → 200.
 
 ## Live pages (all 200, or 307 redirect; 0 client-side JS errors)
 `/` · `/dashboard` · `/dashboard/research` · `/dashboard/library` · `/dashboard/agents` ·

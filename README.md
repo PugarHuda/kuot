@@ -71,7 +71,7 @@ npm install
 cp .env.example .env     # fill ARC_RPC_URL, contract addresses, CIRCLE_*/VENICE_API_KEY
 npm run dev              # http://localhost:3000
 ```
-Contracts: `cd contracts && forge test` (109 Vitest + 59 Foundry green). Deploy with
+Contracts: `cd contracts && forge test` (117 Vitest + 59 Foundry green + 5 opt-in live-integration). Deploy with
 `forge script script/Deploy.s.sol` then `script/DeployKuot.s.sol` (see `DEPLOYED.md`).
 E2E: `npm run e2e` — 21 Playwright click-through tests against the live deploy: a smoke
 sweep of all 12 public pages (2xx + no uncaught JS error), the `/cited` ORCID-lookup

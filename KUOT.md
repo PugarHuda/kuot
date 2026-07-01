@@ -48,5 +48,5 @@ StableFXPool · MockUSYC + CitationYieldUSYC · ShareRegistry · AgentRegistry80
 - **Innovation** — recursive reverse-x402 + proof-of-grounding + directional reputation bond.
 
 ## Tests
-109 Vitest + 59 Foundry green (168 unit + contract), plus 21 Playwright E2E browser click-throughs of
+117 Vitest + 59 Foundry green (176 unit + contract) + 5 opt-in live-integration, plus 21 Playwright E2E browser click-throughs of
 the live UI. `npm test` · `cd contracts && forge test` · `npm run e2e`.

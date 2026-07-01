@@ -91,5 +91,6 @@ authors. **No runtime mocks**; the only stubs (USYC yield) are now labeled hones
 ## Repro
 `KUOT.md` (architecture) · `DEPLOYED.md` (addresses + proof txs) · `CIRCLE-STACK.md` (per-primitive
 proof) · `INTEGRATE.md` (adopt it) · `DEMO.md` (3-min script) · `FEEDBACK.md` (Circle/Arc DX).
-Tests: **109 Vitest + 59 Foundry green** (168 unit + contract), plus **21 Playwright E2E** browser
-click-throughs of the live UI (`npm run e2e`). Drive traction yourself: `npm run traction`.
+Tests: **117 Vitest + 59 Foundry green** (176 unit + contract), plus **21 Playwright E2E** browser
+click-throughs + **5 live-integration** tests (real Crossref/pipeline/on-chain, incl. a burst load test).
+Drive traction yourself: `npm run traction`.

@@ -75,7 +75,7 @@ test("landing page loads and shows the brand", async ({ page }) => {
 test("docs page shows the deployed contracts and test count", async ({ page }) => {
   const resp = await page.goto("/docs");
   expect(resp?.ok()).toBeTruthy();
-  await expect(page.locator("body")).toContainText("168 tests");
+  await expect(page.locator("body")).toContainText("176 tests");
   // a real deployed contract address (AttributionLedger) should be listed
   await expect(page.locator("body")).toContainText(/0x[0-9a-fA-F]{6}/);
 });
