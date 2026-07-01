@@ -504,16 +504,22 @@ export default function ResearchPage() {
       });
       await publicClient?.waitForTransactionReceipt({ hash: lockTx });
       setPrefundState({ status: "locked", lockTx, amount6 });
+      setPrefund(true); // only NOW does research use the locked pool
       return true;
     } catch (e) {
       const raw = e instanceof Error ? e.message : String(e);
+      // Lock failed/declined → don't trap the user in "lock & research" mode; they
+      // can still just research (operator-funded, no balance needed).
+      setPrefund(false);
       setPrefundState({
         status: "error",
-        message: /insufficient|exceeds balance/i.test(raw)
-          ? "Not enough USDC to lock the author pool. Lower the budget or fund your wallet."
-          : /unauthorized|json-rpc protocol|in-flight/i.test(raw)
-            ? "Your wallet rejected the lock (delegated account / RPC). Try a fresh wallet."
-            : raw,
+        message: /user rejected|denied|user cancel/i.test(raw)
+          ? "Lock cancelled — no problem, you don’t need it. Just click “Research” below (no balance required)."
+          : /insufficient|exceeds balance|transfer amount exceeds/i.test(raw)
+            ? "Not enough USDC to lock — you don’t need to. Just click “Research” below; the agent runs on its own budget (no balance required)."
+            : /unauthorized|json-rpc protocol|in-flight/i.test(raw)
+              ? "Your wallet rejected the lock (delegated account / RPC). You can just research instead — no lock needed."
+              : raw,
       });
       return false;
     }
@@ -723,10 +729,7 @@ export default function ResearchPage() {
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <button
-            onClick={() => {
-              setPrefund(true);
-              void lockBudget();
-            }}
+            onClick={() => void lockBudget()}
             disabled={!isConnected || onWrongChain || prefundState.status === "locking" || prefundState.status === "locked"}
             className="rounded-lg bg-emerald-600 px-4 py-2.5 text-xs font-medium text-white transition hover:bg-emerald-500 disabled:opacity-40"
           >
@@ -738,6 +741,7 @@ export default function ResearchPage() {
           </button>
           <button
             onClick={() => {
+              setPrefund(false); // research without locking — no balance needed
               const box = document.querySelector('[data-tour="ask"]');
               box?.scrollIntoView({ behavior: "smooth", block: "center" });
               (box?.querySelector("input") as HTMLInputElement | null)?.focus();
