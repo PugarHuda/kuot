@@ -86,8 +86,8 @@ export type Work = {
   authors: Author[];
   /** Relevance rank (0 = most relevant) used to weight citation payouts. */
   rank: number;
-  /** Where the source came from: academic corpus (OpenAlex) or a live publisher feed. */
-  source?: "openalex" | "rsshub";
+  /** Where the source came from: academic corpus (OpenAlex/Crossref) or a live publisher feed. */
+  source?: "openalex" | "crossref" | "rsshub";
 };
 
 /** Reconstruct an abstract from OpenAlex's inverted index. */
@@ -256,6 +256,89 @@ async function fetchOpenAlexResilient(url: URL): Promise<Response> {
   throw new Error("OpenAlex unreachable after retry");
 }
 
+/** Crossref item (only the fields we use). */
+type CrossrefItem = {
+  DOI?: string;
+  title?: string[];
+  abstract?: string; // JATS XML
+  author?: { given?: string; family?: string; name?: string; ORCID?: string }[];
+  published?: { "date-parts"?: number[][] };
+  issued?: { "date-parts"?: number[][] };
+};
+
+/** Strip JATS/HTML tags from a Crossref abstract (they ship XML, often absent). */
+function stripTags(s?: string): string {
+  return (s ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Fallback academic search via Crossref (150M+ works, free, no key). Used when
+ * OpenAlex is unavailable so a run still finds real, citable papers. Data is
+ * thinner than OpenAlex (abstracts often absent, no author ids) — we map what
+ * exists and resolve wallets the same way (ORCID/name → NameRegistry/demo).
+ */
+export async function searchCrossref(query: string, limit: number, exclude: Set<string>): Promise<Work[]> {
+  const url = new URL("https://api.crossref.org/works");
+  url.searchParams.set("query", sanitizeQuery(query));
+  url.searchParams.set("rows", String(Math.min(50, limit + exclude.size + 5)));
+  url.searchParams.set("select", "DOI,title,abstract,author,published,issued");
+  url.searchParams.set("mailto", "research@kuot.app");
+  let items: CrossrefItem[];
+  try {
+    const res = await fetch(url, {
+      headers: { accept: "application/json", "User-Agent": "kuot/1.0 (mailto:research@kuot.app)" },
+      signal: AbortSignal.timeout(20_000), // Crossref is reliable but slower than OpenAlex
+    });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { message?: { items?: CrossrefItem[] } };
+    items = json.message?.items ?? [];
+  } catch (e) {
+    console.warn("Crossref fallback also unavailable:", e instanceof Error ? e.message : e);
+    return [];
+  }
+
+  const picked = items
+    .filter((it) => (it.title?.[0] ?? "").trim() && !exclude.has((it.DOI ?? "").toLowerCase()))
+    .slice(0, limit);
+
+  const enriched = picked.map((it) => ({
+    it,
+    authors: (it.author ?? [])
+      .slice(0, 4)
+      .map((a) => {
+        const name = (a.name ?? `${a.given ?? ""} ${a.family ?? ""}`.trim()) || "Unknown author";
+        const orcid = a.ORCID ? normalizeOrcid(a.ORCID) : undefined;
+        return { id: orcid ?? name, name, orcid };
+      })
+      .filter((a) => a.name && a.name !== "Unknown author"),
+  }));
+  const wallets = await resolveAuthorWallets(enriched.flatMap((e) => e.authors.map(identityOf)));
+
+  return enriched
+    .map(({ it, authors }, rank): Work | null => {
+      try {
+        const doi = it.DOI ?? "";
+        const year = (it.published ?? it.issued)?.["date-parts"]?.[0]?.[0];
+        return {
+          id: doi || it.title?.[0] || `crossref-${rank}`,
+          title: it.title?.[0] ?? "(untitled)",
+          year,
+          url: doi ? `https://doi.org/${doi}` : "",
+          abstract: stripTags(it.abstract).slice(0, 1200),
+          rank,
+          source: "crossref",
+          authors: authors.map((a) => {
+            const r = wallets.get(identityOf(a)) ?? { wallet: demoWallet(identityOf(a)), claimed: false };
+            return { id: a.id, name: a.name, orcid: a.orcid, wallet: r.wallet, claimed: r.claimed };
+          }),
+        };
+      } catch {
+        return null;
+      }
+    })
+    .filter((w): w is Work => w !== null && w.authors.length > 0);
+}
+
 export async function searchCorpus(query: string, opts: CorpusOptions = {}): Promise<Work[]> {
   const limit = opts.limit ?? 5;
   const exclude = new Set((opts.excludeIds ?? []).map((id) => id.toLowerCase()));
@@ -277,10 +360,11 @@ export async function searchCorpus(query: string, opts: CorpusOptions = {}): Pro
     const res = await fetchOpenAlexResilient(url);
     json = (await res.json()) as { results?: OpenAlexWork[] };
   } catch (e) {
-    // OpenAlex outage / persistent 504 → degrade to "no papers" (a clean 200 for
-    // the caller) instead of throwing and 502-ing the whole research request.
-    console.warn("OpenAlex search unavailable:", e instanceof Error ? e.message : e);
-    return [];
+    // OpenAlex outage / persistent 504 / anonymous-search rate-limit → fall back to
+    // Crossref (another real 150M-work index) so research still runs. If that also
+    // fails, degrade to "no papers" (a clean 200) instead of 502-ing the request.
+    console.warn("OpenAlex unavailable, trying Crossref:", e instanceof Error ? e.message : e);
+    return await searchCrossref(query, limit, exclude);
   }
   // Skip already-seen works (dedup across runs), then keep the top `limit`.
   const results = (json.results ?? []).filter((w) => !exclude.has((w.id ?? "").toLowerCase())).slice(0, limit);
