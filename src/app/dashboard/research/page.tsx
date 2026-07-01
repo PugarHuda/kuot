@@ -58,9 +58,12 @@ const SESSION_ACCOUNT =
   "0x000000000000000000000000000000000000dEaD";
 
 /** Operator that settles a prefunded (Lock-upfront upfront) pool to authors. */
-const OPERATOR_ADDRESS =
-  (process.env.NEXT_PUBLIC_OPERATOR_ADDRESS as `0x${string}`) ??
-  "0x39D2bae5EAedA9283535dDC98F1991c81eD5Cd7E";
+// Where a custodial "Lock upfront" budget is sent (the operator that auto-splits it
+// to authors). Falls back to the session account — NOT a hardcoded address, which
+// previously made the lock a no-op self-transfer if the user shared that address.
+const OPERATOR_ADDRESS = (process.env.NEXT_PUBLIC_OPERATOR_ADDRESS ??
+  process.env.NEXT_PUBLIC_SESSION_ACCOUNT ??
+  "0x000000000000000000000000000000000000dEaD") as `0x${string}`;
 
 /** Narrated full-flow walkthrough — spotlights each part of the run in turn. */
 const TOUR_STEPS: TourStep[] = [
