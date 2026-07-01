@@ -226,6 +226,36 @@ export async function searchRSSHub(query: string, count = 3): Promise<Work[]> {
 }
 
 /** Search OpenAlex and return the top works with authors + abstracts. */
+/**
+ * Fetch OpenAlex with a timeout + one lighter retry. Their `search` (relevance)
+ * engine 504s ("query_timeout") on broad queries; the retry drops the relevance
+ * sort and shrinks the page — the slow parts — which usually clears the timeout.
+ * ponytail: one retry; if OpenAlex is truly down, the caller degrades to no papers.
+ */
+async function fetchOpenAlexResilient(url: URL): Promise<Response> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(url, { headers: { accept: "application/json" }, signal: AbortSignal.timeout(15_000) });
+      if (res.ok) return res;
+      if (res.status >= 500 && attempt === 0) {
+        url.searchParams.set("per_page", "25"); // lighter page
+        url.searchParams.delete("sort"); // the relevance sort is what times out
+        continue;
+      }
+      throw new Error(`OpenAlex ${res.status}: ${await res.text()}`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (attempt === 0 && /timeout|abort|fetch failed|network|ENOTFOUND|ECONNRESET/i.test(msg)) {
+        url.searchParams.set("per_page", "25");
+        url.searchParams.delete("sort");
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw new Error("OpenAlex unreachable after retry");
+}
+
 export async function searchCorpus(query: string, opts: CorpusOptions = {}): Promise<Work[]> {
   const limit = opts.limit ?? 5;
   const exclude = new Set((opts.excludeIds ?? []).map((id) => id.toLowerCase()));
@@ -242,8 +272,7 @@ export async function searchCorpus(query: string, opts: CorpusOptions = {}): Pro
   if (opts.language) filters.push(`language:${opts.language}`);
   if (filters.length) url.searchParams.set("filter", filters.join(","));
 
-  const res = await fetch(url, { headers: { accept: "application/json" } });
-  if (!res.ok) throw new Error(`OpenAlex ${res.status}: ${await res.text()}`);
+  const res = await fetchOpenAlexResilient(url);
   const json = (await res.json()) as { results?: OpenAlexWork[] };
   // Skip already-seen works (dedup across runs), then keep the top `limit`.
   const results = (json.results ?? []).filter((w) => !exclude.has((w.id ?? "").toLowerCase())).slice(0, limit);

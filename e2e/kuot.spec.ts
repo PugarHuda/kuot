@@ -95,15 +95,15 @@ test("research page renders an interactive query box", async ({ page }) => {
   await expect(box).toHaveValue("graphene supercapacitor");
 });
 
-test("budget step is optional and works on any wallet (no ERC-7715 / MetaMask Flask)", async ({ page }) => {
-  // After removing the MetaMask-hackathon ERC-7715 path: the budget is optional,
-  // commits via a plain any-wallet lock, and you can skip straight to research.
+test("budget step: free by default (agent pays), lock is optional, no ERC-7715/Flask", async ({ page }) => {
+  // The concept: research is free — the AGENT pays cited authors from its own budget.
+  // Locking your own USDC is optional. No MetaMask-Flask / ERC-7715 anywhere.
   await page.goto("/dashboard/research");
   await expect(page.locator("body")).toContainText(/Set a budget \(optional\)/i);
-  await expect(page.locator("body")).toContainText(/You can skip this/i);
-  await expect(page.getByRole("button", { name: /Lock [\d.]+ USDC \(any wallet\)/i })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Skip — just research/i })).toBeVisible();
-  // No MetaMask-Flask / ERC-7715 friction left anywhere on the page.
+  await expect(page.locator("body")).toContainText(/Research is free for you/i);
+  await expect(page.locator("body")).toContainText(/the agent pays the cited authors/i);
+  await expect(page.getByRole("button", { name: /the agent pays \(free\)/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Optional: fund it yourself/i })).toBeVisible();
   await expect(page.locator("body")).not.toContainText(/ERC-7715|MetaMask Flask/i);
 });
 

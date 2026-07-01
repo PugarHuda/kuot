@@ -634,10 +634,10 @@ export default function ResearchPage() {
       <Card>
         <StepHead n={2} title="Set a budget (optional)" />
         <p className="mt-2 rounded-md border border-[var(--rule)] bg-[var(--paper-2)] px-3 py-2 text-[11px] text-[var(--ink)]/75">
-          <b>You can skip this.</b> Leave it and the agent runs under its own operator budget — works on
-          <b> any wallet</b>, no signature, and still pays the cited authors on-chain. The amount below just
-          tunes how deep each run goes. To commit your own USDC instead, <b>lock a budget upfront</b> (a plain
-          transfer that works on any wallet).
+          <b>Research is free for you</b> — the <b>agent pays the cited authors</b> from its own budget (that’s
+          the whole idea: an autonomous paying agent). You don’t need to lock or hold anything. The amount below
+          just tunes how <b>deep</b> each run goes. Locking your own USDC is <b>optional</b> — do it only if you
+          want to fund the run yourself (a plain any-wallet transfer) instead of using the agent’s budget.
         </p>
         <p className="mt-2 rounded-md bg-[var(--accent-soft)] px-3 py-2 text-[11px] text-[var(--ink)]/75">
           💡 A bigger budget buys <b>deeper research</b>: it scales the agent fan-out
@@ -682,17 +682,7 @@ export default function ResearchPage() {
           </p>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => void lockBudget()}
-            disabled={!isConnected || onWrongChain || prefundState.status === "locking" || prefundState.status === "locked"}
-            className="rounded-lg bg-emerald-600 px-4 py-2.5 text-xs font-medium text-white transition hover:bg-emerald-500 disabled:opacity-40"
-          >
-            {prefundState.status === "locking"
-              ? "Locking budget…"
-              : prefundState.status === "locked"
-                ? "✓ Budget locked"
-                : `Lock ${perDay} USDC (any wallet)`}
-          </button>
+          {/* PRIMARY: the default, free path — the agent pays, no balance/signature needed. */}
           <button
             onClick={() => {
               setPrefund(false); // research without locking — no balance needed
@@ -700,9 +690,21 @@ export default function ResearchPage() {
               box?.scrollIntoView({ behavior: "smooth", block: "center" });
               (box?.querySelector("input") as HTMLInputElement | null)?.focus();
             }}
-            className="rounded-lg border border-[var(--rule)] px-4 py-2.5 text-[11px] font-medium hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            className="rounded-lg bg-[var(--accent)] px-4 py-2.5 text-xs font-medium text-white transition hover:opacity-90"
           >
-            ↓ Skip — just research (no signature)
+            Continue — the agent pays (free) ↓
+          </button>
+          {/* OPTIONAL: fund the run yourself instead of the agent's budget. */}
+          <button
+            onClick={() => void lockBudget()}
+            disabled={!isConnected || onWrongChain || prefundState.status === "locking" || prefundState.status === "locked"}
+            className="rounded-lg border border-[var(--rule)] px-4 py-2.5 text-[11px] font-medium hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-40"
+          >
+            {prefundState.status === "locking"
+              ? "Locking budget…"
+              : prefundState.status === "locked"
+                ? "✓ Budget locked"
+                : `Optional: fund it yourself — lock ${perDay} USDC`}
           </button>
         </div>
         {prefundState.status === "error" ? (
