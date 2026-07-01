@@ -272,8 +272,16 @@ export async function searchCorpus(query: string, opts: CorpusOptions = {}): Pro
   if (opts.language) filters.push(`language:${opts.language}`);
   if (filters.length) url.searchParams.set("filter", filters.join(","));
 
-  const res = await fetchOpenAlexResilient(url);
-  const json = (await res.json()) as { results?: OpenAlexWork[] };
+  let json: { results?: OpenAlexWork[] };
+  try {
+    const res = await fetchOpenAlexResilient(url);
+    json = (await res.json()) as { results?: OpenAlexWork[] };
+  } catch (e) {
+    // OpenAlex outage / persistent 504 → degrade to "no papers" (a clean 200 for
+    // the caller) instead of throwing and 502-ing the whole research request.
+    console.warn("OpenAlex search unavailable:", e instanceof Error ? e.message : e);
+    return [];
+  }
   // Skip already-seen works (dedup across runs), then keep the top `limit`.
   const results = (json.results ?? []).filter((w) => !exclude.has((w.id ?? "").toLowerCase())).slice(0, limit);
 

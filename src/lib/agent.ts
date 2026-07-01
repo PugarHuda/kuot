@@ -175,7 +175,7 @@ export async function runResearch(query: string, opts: ResearchOptions = {}): Pr
   if (works.length === 0) {
     return {
       query,
-      synthesis: `No papers found for "${searchTerms}" (searched from "${query}"). Try a broader or more specific research topic.`,
+      synthesis: `No papers found for "${searchTerms}" (searched from "${query}"). Either narrow/broaden the topic, or the academic corpus (OpenAlex) is momentarily busy — try again in a few seconds.`,
       webCitations: [],
       works: [],
       payouts: [],
